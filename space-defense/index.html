@@ -28,6 +28,41 @@
 </head>
 <body class="h-screen w-screen flex flex-col overflow-hidden select-none">
 
+    <!-- MODAL INICIAL: SELEÇÃO DE DIFICULDADE -->
+    <div id="difficulty-modal" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 text-center shadow-2xl relative">
+            <div class="text-4xl mb-2">🚀</div>
+            <h1 class="text-2xl font-extrabold text-white mb-1">Space Defense</h1>
+            <p class="text-xs text-slate-400 mb-6">Selecione o nível de desafio antes de iniciar a missão:</p>
+
+            <div class="space-y-3">
+                <button onclick="startGameWithDifficulty('facil')" class="w-full bg-slate-800 hover:bg-emerald-950/60 border border-slate-700 hover:border-emerald-500 p-3.5 rounded-xl text-left transition flex items-center justify-between group">
+                    <div>
+                        <div class="text-sm font-bold text-emerald-400 group-hover:text-emerald-300">🟢 FÁCIL</div>
+                        <div class="text-[11px] text-slate-400">Inimigos mais fracos. Ótimo para partidas casuais.</div>
+                    </div>
+                    <span class="text-xs bg-emerald-950 text-emerald-300 font-bold px-2 py-1 rounded border border-emerald-800">1.0x</span>
+                </button>
+
+                <button onclick="startGameWithDifficulty('normal')" class="w-full bg-slate-800 hover:bg-amber-950/60 border border-slate-700 hover:border-amber-500 p-3.5 rounded-xl text-left transition flex items-center justify-between group">
+                    <div>
+                        <div class="text-sm font-bold text-amber-400 group-hover:text-amber-300">🟡 NORMAL</div>
+                        <div class="text-[11px] text-slate-400">Inimigos +60% HP e +50% dano. Upgrades mais caros.</div>
+                    </div>
+                    <span class="text-xs bg-amber-950 text-amber-300 font-bold px-2 py-1 rounded border border-amber-800">1.6x</span>
+                </button>
+
+                <button onclick="startGameWithDifficulty('dificil')" class="w-full bg-slate-800 hover:bg-red-950/60 border border-slate-700 hover:border-red-500 p-3.5 rounded-xl text-left transition flex items-center justify-between group">
+                    <div>
+                        <div class="text-sm font-bold text-red-400 group-hover:text-red-300">🔴 DIFÍCIL</div>
+                        <div class="text-[11px] text-slate-400">Inimigos +130% HP e +100% dano. Escala severa de ondas.</div>
+                    </div>
+                    <span class="text-xs bg-red-950 text-red-300 font-bold px-2 py-1 rounded border border-red-800">2.5x</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- HUD SUPERIOR -->
     <header class="hud-glass px-3 py-1.5 sm:px-4 sm:py-2 flex items-center justify-between text-xs sm:text-sm z-10 shadow-lg">
         <div class="flex items-center gap-2 sm:gap-3">
@@ -38,6 +73,7 @@
             <div class="bg-blue-950/80 border border-blue-500/30 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-blue-300 font-bold text-xs">
                 Onda <span id="hud-wave" class="text-white text-sm sm:text-base">1</span>
             </div>
+            <span id="hud-diff-badge" class="hidden sm:inline-block text-[10px] font-extrabold px-2 py-0.5 rounded-full border">Fácil</span>
         </div>
 
         <!-- STATUS INIMIGOS -->
@@ -52,8 +88,13 @@
             </div>
         </div>
 
-        <div class="flex items-center gap-2">
-            <!-- BOTÃO VELOCIDADE (1x - 4x) -->
+        <div class="flex items-center gap-1.5 sm:gap-2">
+            <!-- BOTÃO PARAR / DESISTIR -->
+            <button onclick="surrenderGame()" class="bg-red-950/70 hover:bg-red-900 border border-red-500/40 text-red-300 font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full transition text-[11px] sm:text-xs">
+                🛑 Parar
+            </button>
+
+            <!-- VELOCIDADE -->
             <button id="btn-speed" onclick="toggleSpeed()" class="bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-300 font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full transition text-[11px] sm:text-xs flex items-center gap-1">
                 ⚡ <span id="speed-label">1x</span>
             </button>
@@ -74,7 +115,6 @@
     <main class="flex-1 relative bg-slate-950 overflow-hidden" id="canvas-container">
         <canvas id="gameCanvas"></canvas>
 
-        <!-- STATUS FLUTUANTE DA NAVE (HP) -->
         <div class="absolute top-2 left-1/2 -translate-x-1/2 hud-glass px-3 py-1 rounded-full flex items-center gap-2 sm:gap-3 text-[11px] sm:text-xs shadow-md border border-slate-700/50 pointer-events-none">
             <div class="flex items-center gap-1">
                 <span class="text-emerald-400 font-bold">HP:</span>
@@ -87,13 +127,13 @@
         </div>
     </main>
 
-    <!-- HUD INFERIOR: LOJA (COMPACTA NO MOBILE) -->
+    <!-- HUD INFERIOR: LOJA -->
     <footer class="hud-glass p-1.5 sm:p-2.5 z-10 border-t border-slate-800">
         <div class="max-w-4xl mx-auto grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-6 gap-1.5 sm:gap-2">
             <button id="btn-upgrade-atkSpeed" onclick="buyUpgrade('atkSpeed')" class="btn-upgrade p-1.5 sm:p-2 rounded-lg sm:rounded-xl text-left flex flex-col justify-between">
                 <div class="flex justify-between items-start">
                     <span class="text-[10px] sm:text-[11px] font-bold text-blue-300">⚡ Atk Spd</span>
-                    <span id="lvl-atkSpeed" class="text-[9px] sm:text-[10px] bg-blue-900/60 text-blue-200 px-1 py-0.2 sm:px-1.5 sm:py-0.5 rounded font-mono">Nv 1</span>
+                    <span id="lvl-atkSpeed" class="text-[9px] sm:text-[10px] bg-blue-900/60 text-blue-200 px-1 rounded font-mono">Nv 1</span>
                 </div>
                 <div class="text-[9px] sm:text-[10px] text-slate-400 mt-0.5">Cadência</div>
                 <div class="mt-0.5 text-[10px] sm:text-xs font-bold text-amber-400">🪙 <span id="cost-atkSpeed">15</span></div>
@@ -102,7 +142,7 @@
             <button id="btn-upgrade-damage" onclick="buyUpgrade('damage')" class="btn-upgrade p-1.5 sm:p-2 rounded-lg sm:rounded-xl text-left flex flex-col justify-between">
                 <div class="flex justify-between items-start">
                     <span class="text-[10px] sm:text-[11px] font-bold text-red-300">⚔️ Dano</span>
-                    <span id="lvl-damage" class="text-[9px] sm:text-[10px] bg-red-900/60 text-red-200 px-1 py-0.2 sm:px-1.5 sm:py-0.5 rounded font-mono">Nv 1</span>
+                    <span id="lvl-damage" class="text-[9px] sm:text-[10px] bg-red-900/60 text-red-200 px-1 rounded font-mono">Nv 1</span>
                 </div>
                 <div class="text-[9px] sm:text-[10px] text-slate-400 mt-0.5">Por tiro</div>
                 <div class="mt-0.5 text-[10px] sm:text-xs font-bold text-amber-400">🪙 <span id="cost-damage">10</span></div>
@@ -111,7 +151,7 @@
             <button id="btn-upgrade-hp" onclick="buyUpgrade('hp')" class="btn-upgrade p-1.5 sm:p-2 rounded-lg sm:rounded-xl text-left flex flex-col justify-between">
                 <div class="flex justify-between items-start">
                     <span class="text-[10px] sm:text-[11px] font-bold text-emerald-300">🛡️ Max HP</span>
-                    <span id="lvl-hp" class="text-[9px] sm:text-[10px] bg-emerald-900/60 text-emerald-200 px-1 py-0.2 sm:px-1.5 sm:py-0.5 rounded font-mono">Nv 1</span>
+                    <span id="lvl-hp" class="text-[9px] sm:text-[10px] bg-emerald-900/60 text-emerald-200 px-1 rounded font-mono">Nv 1</span>
                 </div>
                 <div class="text-[9px] sm:text-[10px] text-slate-400 mt-0.5">Vida Nave</div>
                 <div class="mt-0.5 text-[10px] sm:text-xs font-bold text-amber-400">🪙 <span id="cost-hp">20</span></div>
@@ -120,7 +160,7 @@
             <button id="btn-upgrade-hpRegen" onclick="buyUpgrade('hpRegen')" class="btn-upgrade p-1.5 sm:p-2 rounded-lg sm:rounded-xl text-left flex flex-col justify-between">
                 <div class="flex justify-between items-start">
                     <span class="text-[10px] sm:text-[11px] font-bold text-teal-300">💖 Regen</span>
-                    <span id="lvl-hpRegen" class="text-[9px] sm:text-[10px] bg-teal-900/60 text-teal-200 px-1 py-0.2 sm:px-1.5 sm:py-0.5 rounded font-mono">Nv 0</span>
+                    <span id="lvl-hpRegen" class="text-[9px] sm:text-[10px] bg-teal-900/60 text-teal-200 px-1 rounded font-mono">Nv 0</span>
                 </div>
                 <div class="text-[9px] sm:text-[10px] text-slate-400 mt-0.5">Cura/seg</div>
                 <div class="mt-0.5 text-[10px] sm:text-xs font-bold text-amber-400">🪙 <span id="cost-hpRegen">25</span></div>
@@ -129,7 +169,7 @@
             <button id="btn-upgrade-goldWave" onclick="buyUpgrade('goldWave')" class="btn-upgrade p-1.5 sm:p-2 rounded-lg sm:rounded-xl text-left flex flex-col justify-between">
                 <div class="flex justify-between items-start">
                     <span class="text-[10px] sm:text-[11px] font-bold text-amber-300">💰 +Onda</span>
-                    <span id="lvl-goldWave" class="text-[9px] sm:text-[10px] bg-amber-900/60 text-amber-200 px-1 py-0.2 sm:px-1.5 sm:py-0.5 rounded font-mono">Nv 1</span>
+                    <span id="lvl-goldWave" class="text-[9px] sm:text-[10px] bg-amber-900/60 text-amber-200 px-1 rounded font-mono">Nv 1</span>
                 </div>
                 <div class="text-[9px] sm:text-[10px] text-slate-400 mt-0.5">Bônus Onda</div>
                 <div class="mt-0.5 text-[10px] sm:text-xs font-bold text-amber-400">🪙 <span id="cost-goldWave">30</span></div>
@@ -138,7 +178,7 @@
             <button id="btn-upgrade-goldKill" onclick="buyUpgrade('goldKill')" class="btn-upgrade p-1.5 sm:p-2 rounded-lg sm:rounded-xl text-left flex flex-col justify-between">
                 <div class="flex justify-between items-start">
                     <span class="text-[10px] sm:text-[11px] font-bold text-yellow-300">🎯 +Abate</span>
-                    <span id="lvl-goldKill" class="text-[9px] sm:text-[10px] bg-yellow-900/60 text-yellow-200 px-1 py-0.2 sm:px-1.5 sm:py-0.5 rounded font-mono">Nv 1</span>
+                    <span id="lvl-goldKill" class="text-[9px] sm:text-[10px] bg-yellow-900/60 text-yellow-200 px-1 rounded font-mono">Nv 1</span>
                 </div>
                 <div class="text-[9px] sm:text-[10px] text-slate-400 mt-0.5">Por Abate</div>
                 <div class="mt-0.5 text-[10px] sm:text-xs font-bold text-amber-400">🪙 <span id="cost-goldKill">40</span></div>
@@ -146,9 +186,9 @@
         </div>
     </footer>
 
-    <!-- MODAL RECOMPENSA DO CHEFE (POWER-UPS DE TIRO) -->
+    <!-- MODAL RECOMPENSA DE CHEFE -->
     <div id="boss-reward-modal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-slate-900 border border-blue-500/40 rounded-2xl max-w-md w-full p-5 text-center shadow-2xl relative animate-bounce-short">
+        <div class="bg-slate-900 border border-blue-500/40 rounded-2xl max-w-md w-full p-5 text-center shadow-2xl relative">
             <div class="text-4xl mb-2">👑</div>
             <h2 class="text-xl font-extrabold text-blue-400 mb-1">CHEFE DERROTADO!</h2>
             <p class="text-xs text-slate-300 mb-4">Escolha uma Modificação de Armamento Especial para sua nave:</p>
@@ -158,7 +198,7 @@
                     <div class="text-2xl p-2 bg-blue-950 rounded-lg">🎯</div>
                     <div>
                         <div class="text-xs font-bold text-blue-300">Tiro Ricochete <span id="reward-lvl-bounce" class="text-[10px] bg-blue-900 text-blue-200 px-1 rounded">Nv 1</span></div>
-                        <div class="text-[11px] text-slate-400">O tiro rebate e busca +1 asteroide próximo com dano mantido.</div>
+                        <div class="text-[11px] text-slate-400">O tiro rebate e busca +1 asteroide próximo.</div>
                     </div>
                 </button>
 
@@ -166,7 +206,7 @@
                     <div class="text-2xl p-2 bg-indigo-950 rounded-lg">⚡</div>
                     <div>
                         <div class="text-xs font-bold text-indigo-300">Tiro Duplo / Sequenciado <span id="reward-lvl-parallel" class="text-[10px] bg-indigo-900 text-indigo-200 px-1 rounded">Nv 1</span></div>
-                        <div class="text-[11px] text-slate-400">Dispara +1 projétil paralelo em linha reta a cada ataque.</div>
+                        <div class="text-[11px] text-slate-400">Dispara +1 projétil paralelo a cada ataque.</div>
                     </div>
                 </button>
 
@@ -174,7 +214,7 @@
                     <div class="text-2xl p-2 bg-cyan-950 rounded-lg">💥</div>
                     <div>
                         <div class="text-xs font-bold text-cyan-300">Multi-Tiro em Leque <span id="reward-lvl-spread" class="text-[10px] bg-cyan-900 text-cyan-200 px-1 rounded">Nv 1</span></div>
-                        <div class="text-[11px] text-slate-400">Dispara projéteis adicionais em ângulos divergentes de 15°.</div>
+                        <div class="text-[11px] text-slate-400">Dispara projéteis em ângulos divergentes de 15°.</div>
                     </div>
                 </button>
             </div>
@@ -197,7 +237,7 @@
 
             <div id="game-over-controls" class="hidden flex-col gap-3">
                 <div class="bg-red-950/40 border border-red-500/30 p-3 rounded-xl text-left">
-                    <div class="text-xs text-red-300 font-semibold mb-1">Você resistiu até a Onda: <b id="final-wave" class="text-white text-sm">1</b></div>
+                    <div class="text-xs text-red-300 font-semibold mb-1">Onda Final: <b id="final-wave" class="text-white text-sm">1</b> (<span id="final-diff" class="uppercase text-amber-400">FÁCIL</span>)</div>
                     <input type="text" id="player-name" placeholder="Digite seu nome para o Ranking..." maxlength="15" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500">
                 </div>
                 <button onclick="submitScoreAndRestart()" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3 rounded-xl shadow-lg transition text-sm">
@@ -208,7 +248,7 @@
     </div>
 
     <script>
-        /* CONFIGURAÇÃO DO FIREBASE */
+        /* FIREBASE CONFIG */
         const firebaseConfig = {
             apiKey: "AIzaSyCvhEL3kMRMYhPK55tcICbLsWFHd45WgB8",
             authDomain: "megahit-games.firebaseapp.com",
@@ -223,9 +263,7 @@
         try {
             if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
             db = firebase.database();
-        } catch(e) {
-            console.log("Firebase fallback mode: Local Leaderboard active");
-        }
+        } catch(e) { console.log("Firebase Fallback Mode"); }
 
         /* CANVAS SETUP */
         const canvas = document.getElementById('gameCanvas');
@@ -238,6 +276,42 @@
         }
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
+
+        /* DIFICULDADES E MULTIPLICADORES */
+        const difficultySettings = {
+            facil:   { name: "Fácil",   hpMult: 1.0, dmgMult: 1.0, costScale: 1.35, initAtkSpd: 1.5, initDmg: 8 },
+            normal:  { name: "Normal",  hpMult: 1.6, dmgMult: 1.5, costScale: 1.48, initAtkSpd: 1.2, initDmg: 6 },
+            dificil: { name: "Difícil", hpMult: 2.3, dmgMult: 2.0, costScale: 1.62, initAtkSpd: 1.0, initDmg: 5 }
+        };
+
+        let selectedDifficulty = 'facil';
+
+        function startGameWithDifficulty(diffKey) {
+            selectedDifficulty = diffKey;
+            const diff = difficultySettings[diffKey];
+
+            // Aplicar Atributos Iniciais da Dificuldade
+            ship.atkSpeed = diff.initAtkSpd;
+            ship.damage = diff.initDmg;
+
+            // Escala de Custo de Upgrades
+            for (let key in upgrades) {
+                upgrades[key].scale = diff.costScale;
+            }
+
+            // Atualizar Badge visual no HUD
+            const badge = document.getElementById('hud-diff-badge');
+            badge.innerText = diff.name;
+            badge.className = `hidden sm:inline-block text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${
+                diffKey === 'facil' ? 'bg-emerald-950 text-emerald-300 border-emerald-500/40' :
+                diffKey === 'normal' ? 'bg-amber-950 text-amber-300 border-amber-500/40' :
+                'bg-red-950 text-red-300 border-red-500/40'
+            }`;
+
+            document.getElementById('difficulty-modal').classList.add('hidden');
+            game.isPaused = false;
+            updateUI();
+        }
 
         /* CONTROLE DE VELOCIDADE */
         let gameSpeed = 1;
@@ -292,7 +366,7 @@
             wave: 1,
             gold: 0,
             gameOver: false,
-            isPaused: false,
+            isPaused: true, // Pausado até escolher dificuldade
             asteroidsInWave: 10,
             asteroidsSpawned: 0,
             asteroidsDefeated: 0,
@@ -308,15 +382,14 @@
             hp: 100,
             maxHp: 100,
             hpRegen: 0,
-            damage: 10,
+            damage: 8,
             atkSpeed: 1.5,
             goldPerWave: 25,
             goldPerKill: 2,
             angle: 0,
-            // POWER-UPS DA NAVE
-            specialBounce: 0,    // Nv de Ricochete (quiques extras)
-            specialParallel: 1,  // Nv de Tiros Paralelos (1 = normal)
-            specialSpread: 0     // Nv de Leque (0 = desativado, 1 = +2 tiros laterais)
+            specialBounce: 0,
+            specialParallel: 1,
+            specialSpread: 0
         };
 
         const upgrades = {
@@ -342,7 +415,7 @@
             });
         }
 
-        /* ASTEROIDES ROCHOSOS */
+        /* ASTEROIDES */
         class Asteroid {
             constructor(type = 'small') {
                 const angle = Math.random() * Math.PI * 2;
@@ -353,28 +426,30 @@
                 this.type = type;
                 this.id = Math.random().toString(36).substr(2, 9);
 
-                const hpMult = 1 + (game.wave * 0.18);
-                const dmgMult = 1 + (game.wave * 0.12);
+                const diff = difficultySettings[selectedDifficulty];
+                const waveFactor = game.wave;
+                const hpMult = (1 + (waveFactor * 0.22)) * diff.hpMult;
+                const dmgMult = (1 + (waveFactor * 0.15)) * diff.dmgMult;
 
                 if (type === 'boss') {
                     this.radius = 36;
-                    this.hp = Math.floor(160 * hpMult * 2.5);
+                    this.hp = Math.floor(180 * hpMult * 2.8);
                     this.speed = 0.6;
-                    this.damagePerSec = Math.floor(18 * dmgMult);
+                    this.damagePerSec = Math.floor(20 * dmgMult);
                     this.goldValue = ship.goldPerKill * 12;
                     this.color = '#ef4444';
                 } else if (type === 'medium') {
                     this.radius = 22;
-                    this.hp = Math.floor(25 * hpMult);
+                    this.hp = Math.floor(30 * hpMult);
                     this.speed = 1.0;
-                    this.damagePerSec = Math.floor(6 * dmgMult);
+                    this.damagePerSec = Math.floor(7 * dmgMult);
                     this.goldValue = ship.goldPerKill * 3;
                     this.color = '#f97316';
                 } else {
                     this.radius = 13;
-                    this.hp = Math.floor(8 * hpMult);
+                    this.hp = Math.floor(10 * hpMult);
                     this.speed = 1.6;
-                    this.damagePerSec = Math.floor(2 * dmgMult);
+                    this.damagePerSec = Math.floor(3 * dmgMult);
                     this.goldValue = ship.goldPerKill;
                     this.color = '#94a3b8';
                 }
@@ -444,7 +519,7 @@
             }
         }
 
-        /* PROJÉTEIS (COM SUPORTE A RICOCHETE) */
+        /* PROJÉTEIS */
         class Bullet {
             constructor(startX, startY, angle, target = null, bouncesLeft = 0, hitHistory = []) {
                 this.x = startX;
@@ -457,9 +532,7 @@
                 this.vx = Math.cos(angle) * this.speed;
                 this.vy = Math.sin(angle) * this.speed;
 
-                if (target) {
-                    this.hitHistory.push(target.id);
-                }
+                if (target) this.hitHistory.push(target.id);
             }
 
             update() {
@@ -471,22 +544,21 @@
                 ctx.save();
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, 3.5, 0, Math.PI * 2);
-                ctx.fillStyle = this.bouncesLeft > 0 ? '#a855f7' : '#38bdf8'; // Roxo se tiver ricochete
+                ctx.fillStyle = this.bouncesLeft > 0 ? '#a855f7' : '#38bdf8';
                 ctx.shadowColor = this.bouncesLeft > 0 ? '#c084fc' : '#38bdf8';
                 ctx.shadowBlur = 8;
                 ctx.fill();
                 ctx.restore();
             }
 
-            // Lógica para Ricochetear no próximo asteroide
             tryBounce() {
                 if (this.bouncesLeft <= 0) return false;
 
                 let nextTarget = null;
-                let minDist = 220; // Raio máximo de busca do ricochete
+                let minDist = 220;
 
                 for (let ast of asteroids) {
-                    if (this.hitHistory.includes(ast.id)) continue; // não acertar o mesmo alvo
+                    if (this.hitHistory.includes(ast.id)) continue;
                     const dist = Math.hypot(ast.x - this.x, ast.y - this.y);
                     if (dist < minDist) {
                         minDist = dist;
@@ -506,9 +578,7 @@
         /* PARTÍCULAS */
         class Particle {
             constructor(x, y, color) {
-                this.x = x;
-                this.y = y;
-                this.color = color;
+                this.x = x; this.y = y; this.color = color;
                 this.radius = Math.random() * 2.5 + 1;
                 const angle = Math.random() * Math.PI * 2;
                 const speed = Math.random() * 3 + 1;
@@ -534,18 +604,15 @@
         }
 
         function createExplosion(x, y, color, count = 12) {
-            for (let i = 0; i < count; i++) {
-                particles.push(new Particle(x, y, color));
-            }
+            for (let i = 0; i < count; i++) particles.push(new Particle(x, y, color));
         }
 
-        /* NAVE COM VISUAL FUTURISTA */
+        /* DESENHAR NAVE */
         function drawShip() {
             ctx.save();
             ctx.translate(ship.x, ship.y);
             ctx.rotate(ship.angle);
 
-            // Fogo do Propulsor
             ctx.beginPath();
             ctx.moveTo(-12, -5);
             ctx.lineTo(-22 - Math.random() * 8, 0);
@@ -555,7 +622,6 @@
             ctx.shadowBlur = 10;
             ctx.fill();
 
-            // Corpo
             ctx.beginPath();
             ctx.moveTo(20, 0);
             ctx.lineTo(-12, -15);
@@ -574,7 +640,6 @@
             ctx.strokeStyle = '#e0f2fe';
             ctx.stroke();
 
-            // Cabine
             ctx.beginPath();
             ctx.ellipse(3, 0, 6, 3, 0, 0, Math.PI * 2);
             ctx.fillStyle = '#ffffff';
@@ -598,7 +663,6 @@
             }
         }
 
-        /* DISPARO AUTOMÁTICO (COM MULTI-TIRO E LEQUE) */
         function autoShoot(now) {
             const interval = 1000 / (ship.atkSpeed * gameSpeed);
             if (now - game.lastShotTime < interval) return;
@@ -622,7 +686,6 @@
                 const baseAngle = Math.atan2(nearest.y - centerY, nearest.x - centerX);
                 ship.angle = baseAngle;
 
-                // 1. Tiros Paralelos / Sequenciados
                 const pCount = ship.specialParallel;
                 const offsetStep = 8;
                 const startOffset = -((pCount - 1) * offsetStep) / 2;
@@ -634,7 +697,6 @@
 
                     bullets.push(new Bullet(centerX + offsetX, centerY + offsetY, baseAngle, nearest, ship.specialBounce));
 
-                    // 2. Multi-Tiro em Leque
                     if (ship.specialSpread > 0) {
                         for (let s = 1; s <= ship.specialSpread; s++) {
                             const angleDev = s * (15 * Math.PI / 180);
@@ -658,7 +720,6 @@
                 game.asteroidsDefeated = 0;
                 game.asteroidsInWave = game.wave % 10 === 0 ? 1 : 8 + (game.wave * 2);
 
-                // EXIBIR MODAL DE RECOMPENSA DE CHEFE A CADA 10 ONDAS
                 if (completedWave % 10 === 0) {
                     triggerBossRewardModal();
                 }
@@ -682,6 +743,12 @@
             game.isPaused = false;
         }
 
+        function surrenderGame() {
+            if (confirm("Deseja realmente encerrar a missão agora e registrar sua pontuação atual no Ranking?")) {
+                triggerGameOver();
+            }
+        }
+
         function buyUpgrade(type) {
             initAudio();
             const u = upgrades[type];
@@ -690,14 +757,14 @@
                 u.lvl++;
 
                 switch(type) {
-                    case 'atkSpeed': ship.atkSpeed += 0.3; break;
-                    case 'damage': ship.damage += 6; break;
+                    case 'atkSpeed': ship.atkSpeed += 0.25; break;
+                    case 'damage': ship.damage += 4; break;
                     case 'hp': 
-                        ship.maxHp += 30; 
-                        ship.hp = Math.min(ship.maxHp, ship.hp + 30); 
+                        ship.maxHp += 25; 
+                        ship.hp = Math.min(ship.maxHp, ship.hp + 25); 
                         break;
-                    case 'hpRegen': ship.hpRegen += 0.8; break;
-                    case 'goldWave': ship.goldPerWave += 12; break;
+                    case 'hpRegen': ship.hpRegen += 0.6; break;
+                    case 'goldWave': ship.goldPerWave += 10; break;
                     case 'goldKill': ship.goldPerKill += 1; break;
                 }
 
@@ -710,8 +777,9 @@
             document.getElementById('hud-wave').innerText = game.wave;
             document.getElementById('hud-gold').innerText = Math.floor(game.gold);
 
-            const hpBase = Math.floor(10 * (1 + game.wave * 0.18));
-            const dmgBase = Math.floor(2 * (1 + game.wave * 0.12));
+            const diff = difficultySettings[selectedDifficulty];
+            const hpBase = Math.floor(10 * (1 + game.wave * 0.22) * diff.hpMult);
+            const dmgBase = Math.floor(2 * (1 + game.wave * 0.15) * diff.dmgMult);
             document.getElementById('hud-ast-hp').innerText = hpBase;
             document.getElementById('hud-ast-dmg').innerText = `${dmgBase}/s`;
 
@@ -748,9 +816,10 @@
             playExplosionSound(true);
 
             document.getElementById('final-wave').innerText = game.wave;
+            document.getElementById('final-diff').innerText = difficultySettings[selectedDifficulty].name;
             document.getElementById('modal-header-icon').innerText = '💥';
-            document.getElementById('modal-title').innerText = 'Fim de Jogo!';
-            document.getElementById('modal-subtitle').innerText = 'Sua nave foi destruída pelos asteroides.';
+            document.getElementById('modal-title').innerText = 'Missão Finalizada!';
+            document.getElementById('modal-subtitle').innerText = 'Sua pontuação foi registrada com sucesso.';
             document.getElementById('game-over-controls').classList.remove('hidden');
             document.getElementById('game-over-controls').classList.add('flex');
             
@@ -763,13 +832,13 @@
             
             if (db) {
                 db.ref('ranking_space_defense').push({
-                    name: nameInput,
+                    name: `${nameInput} [${difficultySettings[selectedDifficulty].name}]`,
                     wave: game.wave,
                     date: new Date().toISOString()
                 });
             } else {
                 let localScores = JSON.parse(localStorage.getItem('megahit_sd_scores') || '[]');
-                localScores.push({ name: nameInput, wave: game.wave });
+                localScores.push({ name: `${nameInput} [${difficultySettings[selectedDifficulty].name}]`, wave: game.wave });
                 localScores.sort((a,b) => b.wave - a.wave);
                 localStorage.setItem('megahit_sd_scores', JSON.stringify(localScores.slice(0, 10)));
             }
@@ -847,7 +916,6 @@
 
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-                // Estrelas
                 ctx.fillStyle = '#ffffff';
                 for (let star of stars) {
                     ctx.globalAlpha = star.alpha;
@@ -857,7 +925,6 @@
                 }
                 ctx.globalAlpha = 1.0;
 
-                // Raio de Alcance
                 ctx.beginPath();
                 ctx.arc(ship.x, ship.y, ship.attackRange, 0, Math.PI * 2);
                 ctx.strokeStyle = 'rgba(56, 189, 248, 0.15)';
@@ -866,10 +933,8 @@
                 ctx.stroke();
                 ctx.setLineDash([]);
 
-                // Nave
                 drawShip();
 
-                // Projétil vs Asteroide
                 for (let i = bullets.length - 1; i >= 0; i--) {
                     let b = bullets[i];
                     b.update();
@@ -881,8 +946,7 @@
                             ast.hp -= b.damage;
                             createExplosion(b.x, b.y, '#38bdf8', 4);
 
-                            // Lógica de Ricochete
-                            const bounced = b.tryBounce();
+                            b.tryBounce();
                             bullets.splice(i, 1);
 
                             if (ast.hp <= 0) {
@@ -902,13 +966,11 @@
                     }
                 }
 
-                // Asteroides
                 for (let ast of asteroids) {
                     ast.update(deltaTime);
                     ast.draw();
                 }
 
-                // Partículas
                 for (let i = particles.length - 1; i >= 0; i--) {
                     let p = particles[i];
                     p.update();
