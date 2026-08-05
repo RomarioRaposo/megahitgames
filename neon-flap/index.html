@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Neon Flap - MegaHit Games</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="game-container">
+        <!-- Barra Superior (HUD) -->
+        <header class="game-header">
+            <a href="../" class="back-btn">⬅ Hub</a>
+            <div class="hud">
+                <span>PONTOS: <strong id="score-val">0</strong></span>
+                <span>RECORDE: <strong id="best-val">0</strong></span>
+            </div>
+        </header>
+
+        <!-- Canvas do Jogo -->
+        <canvas id="gameCanvas" width="480" height="640"></canvas>
+
+        <!-- Overlay de Tela Inicial -->
+        <div id="overlay-start" class="overlay">
+            <h1 class="neon-title">NEON FLAP</h1>
+            <p>Toque na tela ou pressione ESPAÇO para dar impulso na nave Neon. Evite as barreiras e supere seus limites!</p>
+            <button id="start-btn" class="btn">INICIAR VOAR</button>
+        </div>
+
+        <!-- Overlay de Game Over & Ranking -->
+        <div id="overlay-gameover" class="overlay" style="display: none;">
+            <h1 id="gameover-title">FIM DE JOGO</h1>
+            <p id="gameover-msg">Pontuação: <strong id="final-score">0</strong></p>
+
+            <div id="nick-form" class="nick-form">
+                <input type="text" id="player-nick" maxlength="12" placeholder="Seu Apelido / Nick" autocomplete="off">
+                <button id="save-score-btn" class="btn">SALVAR NO RANKING</button>
+            </div>
+
+            <!-- Tabela Ranking Top 10 -->
+            <div class="ranking-container">
+                <h3>🏆 TOP 10 PILOTOS NEON</h3>
+                <ol id="leaderboard-list"></ol>
+            </div>
+
+            <button id="restart-btn" class="btn btn-secondary">TENTAR NOVAMENTE</button>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
