@@ -75,10 +75,21 @@ canvas.addEventListener('touchend', () => { isTouching = false; });
 function handleTouchMove(e) {
     e.preventDefault();
     if (!gameActive) return;
+
     const rect = canvas.getBoundingClientRect();
     const touch = e.touches[0];
-    targetTouchX = (touch.clientX - rect.left) * (canvas.width / rect.width) - player.width / 2;
-    targetTouchY = (touch.clientY - rect.top) * (canvas.height / rect.height) - player.height / 2;
+
+    // Converte as coordenadas do toque para a escala do Canvas
+    const touchX = (touch.clientX - rect.left) * (canvas.width / rect.width);
+    const touchY = (touch.clientY - rect.top) * (canvas.height / rect.height);
+
+    // Alvo X: Centralizado horizontalmente no dedo
+    targetTouchX = touchX - player.width / 2;
+
+    // Alvo Y: 45 pixels ACIMA da ponta do dedo para a nave não ficar escondida
+    const FINGER_OFFSET_Y = 45; 
+    targetTouchY = touchY - player.height / 2 - FINGER_OFFSET_Y;
+
     isTouching = true;
 }
 
