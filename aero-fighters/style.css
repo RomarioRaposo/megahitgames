@@ -1,199 +1,141 @@
+:root {
+  --bg-dark: #07090e;
+  --accent-cyan: #00f0ff;
+  --accent-red: #ff2a6d;
+  --accent-yellow: #ffe600;
+  --font-main: 'Outfit', sans-serif;
+}
+
 * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-    user-select: none;
-    -webkit-user-select: none;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
 }
 
 body {
-    background-color: #030712;
-    color: #ffffff;
-    font-family: system-ui, -apple-system, sans-serif;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    overflow: hidden;
-    touch-action: none; /* Bloqueia gestos nativos do navegador no mobile */
+  background-color: var(--bg-dark);
+  color: #fff;
+  font-family: var(--font-main);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  overflow: hidden;
 }
 
 .game-container {
-    position: relative;
-    width: 100%;
-    max-width: 480px;
-    height: 100vh;
-    max-height: 640px;
-    background: #000;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.9);
-    border-radius: 12px;
-    overflow: hidden;
-}
-
-/* --- Header do Jogo (Ajuste no Z-INDEX) --- */
-.game-header {
-    width: 100%;
-    padding: 12px 18px;
-    background: rgba(15, 23, 42, 0.95);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    /* ALTERAÇÃO AQUI: z-index alterado de 10 para 30 */
-    z-index: 30; 
-    border-bottom: 1px solid #334155;
-    position: relative; /* Garante que o z-index funcione corretamente */
-}
-
-/* --- Header do Jogo com Logo Clicável --- */
-.logo-link {
-    text-decoration: none;
-    color: inherit;
-    transition: transform 0.2s ease;
-}
-
-.logo-link:hover {
-    transform: scale(1.03);
-}
-
-.logo-link h1 {
-    font-size: 1.2rem;
-    font-weight: 800;
-    letter-spacing: -0.5px;
-}
-
-.logo-link h1 span {
-    color: #3b82f6; /* Ou #ec4899 no Neon Flap */
+  width: 100%;
+  max-width: 500px;
+  height: 100vh;
+  max-height: 850px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background: #0d1117;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+  overflow: hidden;
 }
 
 .hud {
-    font-size: 0.9rem;
-    display: flex;
-    gap: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  z-index: 10;
 }
 
-.hud strong {
-    color: #f59e0b;
+.btn-back {
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 8px 16px;
+  border-radius: 20px;
 }
 
-#gameCanvas {
-    background-color: #020617;
-    width: 100%;
-    height: 100%;
-    touch-action: none;
+.stats {
+  font-weight: 800;
+  color: var(--accent-yellow);
 }
 
-/* --- Overlays (Start / Game Over) --- */
+.canvas-wrapper {
+  flex: 1;
+  position: relative;
+}
+
+canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
 .overlay {
-    position: absolute;
-    /* ALTERAÇÃO AQUI: Ajusta o topo para não cobrir o cabeçalho */
-    top: 50px; /* Altura do header */
-    left: 0;
-    width: 100%;
-    height: calc(100% - 50px); /* Ocupa apenas a área do canvas */
-    background: rgba(15, 23, 42, 0.95);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    padding: 20px;
-    z-index: 20; /* Fica abaixo do header (30) */
-    overflow-y: auto;
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(7, 9, 14, 0.9);
+  backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  z-index: 20;
 }
+
+.overlay.hidden { display: none; }
 
 .overlay h1 {
-    font-size: 2.2rem;
-    color: #3b82f6;
-    margin-bottom: 8px;
-    letter-spacing: 1px;
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: var(--accent-red);
+  text-shadow: 0 0 15px rgba(255, 42, 109, 0.6);
 }
 
-.overlay p {
-    color: #94a3b8;
-    margin-bottom: 20px;
-    font-size: 0.95rem;
-    max-width: 320px;
+.btn-action {
+  background: linear-gradient(45deg, var(--accent-red), var(--accent-yellow));
+  border: none;
+  color: #fff;
+  padding: 14px 32px;
+  font-size: 1.1rem;
+  font-weight: 800;
+  border-radius: 30px;
+  cursor: pointer;
 }
 
-.btn {
-    background: #2563eb;
-    color: #fff;
-    border: none;
-    padding: 12px 24px;
-    font-size: 0.95rem;
-    font-weight: 700;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background 0.2s;
-    width: 100%;
-    max-width: 280px;
-    margin-top: 8px;
+.mobile-controls {
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  background: #07090e;
 }
 
-.btn:hover {
-    background: #1d4ed8;
+.dpad {
+  display: flex;
+  gap: 8px;
 }
 
-.btn-secondary {
-    background: #475569;
+.ctrl-btn {
+  width: 60px;
+  height: 50px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border-radius: 8px;
+  font-size: 1.2rem;
 }
 
-.btn-secondary:hover {
-    background: #334155;
-}
-
-/* Formulário de Nick & Ranking */
-.nick-form {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    width: 100%;
-    max-width: 280px;
-    margin-bottom: 15px;
-}
-
-.nick-form input {
-    padding: 10px 14px;
-    border-radius: 6px;
-    border: 1px solid #334155;
-    background: #1e293b;
-    color: #fff;
-    font-size: 1rem;
-    text-align: center;
-}
-
-.nick-form input:focus {
-    outline: none;
-    border-color: #3b82f6;
-}
-
-.ranking-container {
-    width: 100%;
-    max-width: 280px;
-    background: #1e293b;
-    border: 1px solid #334155;
-    border-radius: 8px;
-    padding: 12px;
-    margin-bottom: 15px;
-    text-align: left;
-}
-
-.ranking-container h3 {
-    font-size: 0.9rem;
-    color: #f59e0b;
-    margin-bottom: 8px;
-    text-align: center;
-}
-
-.ranking-container ol {
-    padding-left: 20px;
-    font-size: 0.85rem;
-    color: #cbd5e1;
-}
-
-.ranking-container li {
-    margin-bottom: 4px;
+.fire-btn {
+  flex: 1;
+  height: 50px;
+  background: var(--accent-red);
+  border: none;
+  color: #fff;
+  font-weight: 800;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(255, 42, 109, 0.4);
 }
