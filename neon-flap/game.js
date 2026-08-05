@@ -38,6 +38,7 @@ bestVal.textContent = bestScore;
 
 let lastTime = 0;
 let dt = 0;
+let animationFrameId = null;
 
 // Nave Neon
 const bird = {
@@ -69,7 +70,8 @@ canvas.addEventListener('touchstart', e => {
     jump();
 }, { passive: false });
 
-canvas.addEventListener('mousedown', () => {
+canvas.addEventListener('mousedown', (e) => {
+    e.preventDefault();
     if (gameActive) jump();
 });
 
@@ -90,11 +92,17 @@ function jump() {
     }
 }
 
-startBtn.addEventListener('click', startGame);
-restartBtn.addEventListener('click', startGame);
-saveScoreBtn.addEventListener('click', saveRankingScore);
+// Vinculando Eventos aos Botões de Forma Direta
+if (startBtn) startBtn.onclick = (e) => { e.stopPropagation(); startGame(); };
+if (restartBtn) restartBtn.onclick = (e) => { e.stopPropagation(); startGame(); };
+if (saveScoreBtn) saveScoreBtn.onclick = (e) => { e.stopPropagation(); saveRankingScore(); };
 
 function startGame() {
+    // Cancela qualquer loop de animação anterior se estiver rodando
+    if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+    }
+
     score = 0;
     scoreVal.textContent = score;
 
@@ -110,11 +118,17 @@ function startGame() {
     overlayGameOver.style.display = 'none';
     gameActive = true;
     lastTime = performance.now();
-    requestAnimationFrame(gameLoop);
+    
+    // Inicia o loop
+    animationFrameId = requestAnimationFrame(gameLoop);
 }
 
 function gameOver() {
     gameActive = false;
+    if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+    }
+
     if (score > bestScore) {
         bestScore = score;
         localStorage.setItem('megahit_neonflap_best', bestScore);
@@ -149,7 +163,7 @@ function gameLoop(now) {
     drawParticles();
     drawBird();
 
-    requestAnimationFrame(gameLoop);
+    animationFrameId = requestAnimationFrame(gameLoop);
 }
 
 function updateBird() {
@@ -280,10 +294,7 @@ function drawParticles() {
     });
 }
 
-// ==========================================
-// RANKING GLOBAL & LOCAL FALLBACK
-// ==========================================
-
+// Ranking
 function getLocalLeaderboard() {
     return JSON.parse(localStorage.getItem('megahit_neonflap_ranks') || '[]');
 }
