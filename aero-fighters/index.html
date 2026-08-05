@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Aero Fighters - MegaHit Games</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="game-container">
+        <!-- Top Bar com Voltar e Score -->
+        <header class="game-header">
+            <a href="../" class="back-btn">⬅ Voltar ao Hub</a>
+            <div class="hud">
+                <span>PONTOS: <strong id="score-val">0</strong></span>
+                <span>VIDAS: <strong id="lives-val">3</strong></span>
+            </div>
+        </header>
+
+        <!-- Canvas do Jogo -->
+        <canvas id="gameCanvas" width="480" height="640"></canvas>
+
+        <!-- Overlay de Game Over / Start -->
+        <div id="overlay" class="overlay">
+            <h1 id="overlay-title">AERO FIGHTERS</h1>
+            <p id="overlay-msg">Defenda os céus! Destrua os inimigos e o Boss final.</p>
+            <button id="start-btn" class="btn">JOGAR AGORA</button>
+        </div>
+
+        <!-- Controles Touch para Mobile -->
+        <div class="mobile-controls">
+            <div class="dpad">
+                <button id="btn-up" class="touch-btn">▲</button>
+                <div class="horizontal-btns">
+                    <button id="btn-left" class="touch-btn">◀</button>
+                    <button id="btn-down" class="touch-btn">▼</button>
+                    <button id="btn-right" class="touch-btn">▶</button>
+                </div>
+            </div>
+            <div class="action-btns">
+                <button id="btn-fire" class="touch-btn fire-btn">🔥 TIRO</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
