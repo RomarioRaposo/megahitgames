@@ -1,0 +1,179 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+body {
+    background-color: #0b0f19;
+    color: #ffffff;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden;
+}
+
+.game-container {
+    position: relative;
+    width: 100%;
+    max-width: 480px;
+    height: 100vh;
+    max-height: 640px;
+    background: #000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.game-header {
+    width: 100%;
+    padding: 10px 15px;
+    background: rgba(15, 23, 42, 0.9);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 10;
+    border-bottom: 1px solid #334155;
+}
+
+.back-btn {
+    color: #3b82f6;
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: bold;
+}
+
+.hud {
+    font-size: 0.85rem;
+    display: flex;
+    gap: 15px;
+}
+
+.hud strong {
+    color: #f59e0b;
+}
+
+#gameCanvas {
+    background-color: #030712;
+    width: 100%;
+    height: 100%;
+}
+
+/* Overlay Game Over / Start */
+.overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(15, 23, 42, 0.92);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 20px;
+    z-index: 20;
+}
+
+.overlay h1 {
+    font-size: 2rem;
+    color: #ef4444;
+    margin-bottom: 10px;
+    letter-spacing: 2px;
+}
+
+.overlay p {
+    color: #94a3b8;
+    margin-bottom: 25px;
+    font-size: 0.95rem;
+}
+
+.btn {
+    background: #2563eb;
+    color: #fff;
+    border: none;
+    padding: 12px 28px;
+    font-size: 1rem;
+    font-weight: bold;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn:hover {
+    background: #1d4ed8;
+}
+
+/* Controles Mobile */
+.mobile-controls {
+    position: absolute;
+    bottom: 10px;
+    width: 100%;
+    padding: 0 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    z-index: 10;
+    pointer-events: none;
+}
+
+.dpad, .action-btns {
+    pointer-events: auto;
+}
+
+.horizontal-btns {
+    display: flex;
+    gap: 5px;
+}
+
+.touch-btn {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    font-size: 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    touch-action: manipulation;
+}
+
+.touch-btn:active {
+    background: rgba(59, 130, 246, 0.6);
+}
+
+.dpad {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+.fire-btn {
+    width: 65px;
+    height: 65px;
+    background: rgba(239, 68, 68, 0.4);
+    border-color: rgba(239, 68, 68, 0.7);
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.fire-btn:active {
+    background: rgba(239, 68, 68, 0.8);
+}
+
+@media (min-width: 768px) {
+    .mobile-controls {
+        display: none; /* Esconde botões touch em computadores */
+    }
+}
