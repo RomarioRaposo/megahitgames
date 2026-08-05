@@ -281,8 +281,34 @@ function drawParticles() {
 }
 
 // ==========================================
-// RANKING GLOBAL - FIREBASE REALTIME DATABASE
+// RANKING GLOBAL & LOCAL FALLBACK
 // ==========================================
+
+function getLocalLeaderboard() {
+    return JSON.parse(localStorage.getItem('megahit_neonflap_ranks') || '[]');
+}
+
+function saveLocalLeaderboard(nick, score) {
+    let ranks = getLocalLeaderboard();
+    ranks.push({ nick, score });
+    ranks.sort((a, b) => b.score - a.score);
+    ranks = ranks.slice(0, 10);
+    localStorage.setItem('megahit_neonflap_ranks', JSON.stringify(ranks));
+    return ranks;
+}
+
+function renderListUI(ranks) {
+    leaderboardList.innerHTML = '';
+    if (!ranks || ranks.length === 0) {
+        leaderboardList.innerHTML = '<li>Seja o primeiro a pontuar!</li>';
+        return;
+    }
+    ranks.forEach((item, index) => {
+        const li = document.createElement('li');
+        li.innerHTML = `<strong>#${index + 1} ${item.nick}</strong>: ${item.score} pts`;
+        leaderboardList.appendChild(li);
+    });
+}
 
 async function renderLeaderboard() {
     leaderboardList.innerHTML = '<li>Carregando ranking...</li>';
@@ -295,19 +321,13 @@ async function renderLeaderboard() {
         if (snapshot.exists()) {
             const data = snapshot.val();
             const list = Object.values(data).sort((a, b) => b.score - a.score);
-
-            leaderboardList.innerHTML = '';
-            list.forEach((item, index) => {
-                const li = document.createElement('li');
-                li.innerHTML = `<strong>#${index + 1} ${item.nick}</strong>: ${item.score} pts`;
-                leaderboardList.appendChild(li);
-            });
+            renderListUI(list);
         } else {
-            leaderboardList.innerHTML = '<li>Seja o primeiro a pontuar!</li>';
+            renderListUI([]);
         }
     } catch (err) {
-        console.error("Erro ao carregar ranking:", err);
-        leaderboardList.innerHTML = '<li>Erro ao carregar ranking.</li>';
+        console.warn("Firebase offline/bloqueado. Carregando ranking local:", err);
+        renderListUI(getLocalLeaderboard());
     }
 }
 
@@ -326,12 +346,13 @@ async function saveRankingScore() {
             timestamp: Date.now()
         });
 
+        saveLocalLeaderboard(nick, score);
         document.getElementById('nick-form').style.display = 'none';
         renderLeaderboard();
     } catch (err) {
-        console.error("Erro ao salvar:", err);
-        alert("Não foi possível salvar a pontuação online.");
-        saveScoreBtn.disabled = false;
-        saveScoreBtn.textContent = 'TENTAR NOVAMENTE';
+        console.warn("Erro ao salvar no Firebase. Salvando localmente:", err);
+        const localRanks = saveLocalLeaderboard(nick, score);
+        document.getElementById('nick-form').style.display = 'none';
+        renderListUI(localRanks);
     }
 }
