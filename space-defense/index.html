@@ -276,11 +276,16 @@
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
 
-        /* DIFICULDADES */
+   /* CONFIGURAÇÃO DE DIFICULDADES (REBALANCEADA) */
         const difficultySettings = {
+            // FÁCIL: Mantém o padrão atual leve
             facil:   { name: "Fácil",   hpMult: 1.0, dmgMult: 1.0, costScale: 1.35, initAtkSpd: 1.8, initDmg: 10 },
-            normal:  { name: "Normal",  hpMult: 1.3, dmgMult: 1.2, costScale: 1.45, initAtkSpd: 1.4, initDmg: 8 },
-            dificil: { name: "Difícil", hpMult: 1.7, dmgMult: 1.5, costScale: 1.55, initAtkSpd: 1.1, initDmg: 6 }
+        
+            // NORMAL: Inimigos levemente mais fortes, mas a nave mantém cadência alta para não acumular tela
+            normal:  { name: "Normal",  hpMult: 1.15, dmgMult: 1.1, costScale: 1.40, initAtkSpd: 1.6, initDmg: 9 },
+        
+            // DIFÍCIL: Desafiador sem ser travado (permite destruir o asteroide pequeno em 1 a 2 tiros)
+            dificil: { name: "Difícil", hpMult: 1.35, dmgMult: 1.25, costScale: 1.45, initAtkSpd: 1.4, initDmg: 8 }
         };
 
         let selectedDifficulty = 'facil';
@@ -427,29 +432,36 @@
                 const hpGrowth = (1 + (waveFactor * 0.12)) * diff.hpMult;
                 const dmgGrowth = (1 + (waveFactor * 0.10)) * diff.dmgMult;
 
-                if (type === 'boss') {
-                    this.radius = 36;
-                    this.hp = Math.floor(120 * hpGrowth * 2.2);
-                    this.speed = 0.5;
-                    this.damagePerSec = Math.floor(15 * dmgGrowth);
-                    this.goldValue = ship.goldPerKill * 12;
-                    this.color = '#ef4444';
-                } else if (type === 'medium') {
-                    this.radius = 22;
-                    this.hp = Math.floor(18 * hpGrowth);
-                    this.speed = 0.9;
-                    this.damagePerSec = Math.floor(5 * dmgGrowth);
-                    this.goldValue = ship.goldPerKill * 3;
-                    this.color = '#f97316';
-                } else {
-                    this.radius = 13;
-                    this.hp = Math.floor(8 * hpGrowth);
-                    this.speed = 1.3;
-                    this.damagePerSec = Math.floor(2 * dmgGrowth);
-                    this.goldValue = ship.goldPerKill;
-                    this.color = '#94a3b8';
-                }
-                this.maxHp = this.hp;
+/* DENTRO DO CONSTRUTOR DA CLASSE Asteroid */
+            const diff = difficultySettings[selectedDifficulty];
+            const waveFactor = game.wave - 1; 
+
+// REDUZA estes dois multiplicadores de crescimento por onda:
+            const hpGrowth = (1 + (waveFactor * 0.08)) * diff.hpMult;  // Era 0.12 (reduzido para 0.08)
+            const dmgGrowth = (1 + (waveFactor * 0.06)) * diff.dmgMult; // Era 0.10 (reduzido para 0.06)
+            
+            if (type === 'boss') {
+                this.radius = 36;
+                this.hp = Math.floor(100 * hpGrowth * 2.0); // Era 120 e 2.2x
+                this.speed = 0.5;
+                this.damagePerSec = Math.floor(12 * dmgGrowth);
+                this.goldValue = ship.goldPerKill * 12;
+                this.color = '#ef4444';
+            } else if (type === 'medium') {
+                this.radius = 22;
+                this.hp = Math.floor(15 * hpGrowth); // Era 18
+                this.speed = 0.9;
+                this.damagePerSec = Math.floor(4 * dmgGrowth);
+                this.goldValue = ship.goldPerKill * 3;
+                this.color = '#f97316';
+            } else {
+                this.radius = 13;
+                this.hp = Math.floor(7 * hpGrowth); // Era 8
+                this.speed = 1.3;
+                this.damagePerSec = Math.floor(2 * dmgGrowth);
+                this.goldValue = ship.goldPerKill;
+                this.color = '#94a3b8';
+            }
 
                 this.vertices = [];
                 const numVerts = Math.floor(Math.random() * 3) + 7;
