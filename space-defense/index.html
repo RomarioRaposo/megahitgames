@@ -39,7 +39,7 @@
                 <button onclick="startGameWithDifficulty('facil')" class="w-full bg-slate-800 hover:bg-emerald-950/60 border border-slate-700 hover:border-emerald-500 p-3.5 rounded-xl text-left transition flex items-center justify-between group">
                     <div>
                         <div class="text-sm font-bold text-emerald-400 group-hover:text-emerald-300">🟢 FÁCIL</div>
-                        <div class="text-[11px] text-slate-400">Inimigos com HP reduzido e tiro inicial forte.</div>
+                        <div class="text-[11px] text-slate-400">Inimigos normais e ataque rápido. Ideal para relaxar.</div>
                     </div>
                     <span class="text-xs bg-emerald-950 text-emerald-300 font-bold px-2 py-1 rounded border border-emerald-800">1.0x</span>
                 </button>
@@ -47,7 +47,7 @@
                 <button onclick="startGameWithDifficulty('normal')" class="w-full bg-slate-800 hover:bg-amber-950/60 border border-slate-700 hover:border-amber-500 p-3.5 rounded-xl text-left transition flex items-center justify-between group">
                     <div>
                         <div class="text-sm font-bold text-amber-400 group-hover:text-amber-300">🟡 NORMAL</div>
-                        <div class="text-[11px] text-slate-400">Inimigos +30% HP e +20% dano. Progresso equilibrado.</div>
+                        <div class="text-[11px] text-slate-400">Inimigos +15% HP e +10% dano. Equilibrado e tático.</div>
                     </div>
                     <span class="text-xs bg-amber-950 text-amber-300 font-bold px-2 py-1 rounded border border-amber-800">1.3x</span>
                 </button>
@@ -55,9 +55,9 @@
                 <button onclick="startGameWithDifficulty('dificil')" class="w-full bg-slate-800 hover:bg-red-950/60 border border-slate-700 hover:border-red-500 p-3.5 rounded-xl text-left transition flex items-center justify-between group">
                     <div>
                         <div class="text-sm font-bold text-red-400 group-hover:text-red-300">🔴 DIFÍCIL</div>
-                        <div class="text-[11px] text-slate-400">Inimigos +70% HP e +50% dano. Alta exigência táctica.</div>
+                        <div class="text-[11px] text-slate-400">Inimigos +35% HP e +25% dano. Exige estrategia e velocidade.</div>
                     </div>
-                    <span class="text-xs bg-red-950 text-red-300 font-bold px-2 py-1 rounded border border-red-800">1.7x</span>
+                    <span class="text-xs bg-red-950 text-red-300 font-bold px-2 py-1 rounded border border-red-800">1.6x</span>
                 </button>
             </div>
         </div>
@@ -66,7 +66,7 @@
     <!-- HUD SUPERIOR -->
     <header class="hud-glass px-3 py-1.5 sm:px-4 sm:py-2 flex items-center justify-between text-xs sm:text-sm z-10 shadow-lg">
         <div class="flex items-center gap-2 sm:gap-3">
-            <a href="../../index.html" class="flex items-center gap-1 font-bold text-blue-400 hover:text-blue-300 transition text-xs sm:text-sm">
+            <a href="../index.html" class="flex items-center gap-1 font-bold text-blue-400 hover:text-blue-300 transition text-xs sm:text-sm">
                 <span>◀</span> <span class="hidden sm:inline">Hub</span>
             </a>
             <div class="h-3 w-[1px] bg-slate-700"></div>
@@ -79,7 +79,7 @@
         <div class="hidden md:flex items-center gap-4 text-slate-300">
             <div class="flex items-center gap-1">
                 <span class="text-slate-400">HP Inimigo:</span>
-                <span id="hud-ast-hp" class="font-bold text-red-400">8</span>
+                <span id="hud-ast-hp" class="font-bold text-red-400">7</span>
             </div>
             <div class="flex items-center gap-1">
                 <span class="text-slate-400">Ataque/s:</span>
@@ -122,7 +122,7 @@
         </div>
     </main>
 
-    <!-- HUD INFERIOR: LOJA -->
+    <!-- HUD INFERIOR: LOJA DE UPGRADES -->
     <footer class="hud-glass p-1.5 sm:p-2.5 z-10 border-t border-slate-800">
         <div class="max-w-4xl mx-auto grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-6 gap-1.5 sm:gap-2">
             <button id="btn-upgrade-atkSpeed" onclick="buyUpgrade('atkSpeed')" class="btn-upgrade p-1.5 sm:p-2 rounded-lg sm:rounded-xl text-left flex flex-col justify-between">
@@ -276,16 +276,11 @@
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
 
-   /* CONFIGURAÇÃO DE DIFICULDADES (REBALANCEADA) */
+        /* DIFICULDADES REBALANCEADAS */
         const difficultySettings = {
-            // FÁCIL: Mantém o padrão atual leve
-            facil:   { name: "Fácil",   hpMult: 1.0, dmgMult: 1.0, costScale: 1.35, initAtkSpd: 1.8, initDmg: 10 },
-        
-            // NORMAL: Inimigos levemente mais fortes, mas a nave mantém cadência alta para não acumular tela
-            normal:  { name: "Normal",  hpMult: 1.15, dmgMult: 1.1, costScale: 1.40, initAtkSpd: 1.6, initDmg: 9 },
-        
-            // DIFÍCIL: Desafiador sem ser travado (permite destruir o asteroide pequeno em 1 a 2 tiros)
-            dificil: { name: "Difícil", hpMult: 1.35, dmgMult: 1.25, costScale: 1.45, initAtkSpd: 1.4, initDmg: 8 }
+            facil:   { name: "Fácil",   hpMult: 1.0,  dmgMult: 1.0,  costScale: 1.35, initAtkSpd: 1.8, initDmg: 10 },
+            normal:  { name: "Normal",  hpMult: 1.15, dmgMult: 1.1,  costScale: 1.40, initAtkSpd: 1.5, initDmg: 9 },
+            dificil: { name: "Difícil", hpMult: 1.35, dmgMult: 1.25, costScale: 1.45, initAtkSpd: 1.3, initDmg: 8 }
         };
 
         let selectedDifficulty = 'facil';
@@ -429,39 +424,32 @@
 
                 const diff = difficultySettings[selectedDifficulty];
                 const waveFactor = game.wave - 1;
-                const hpGrowth = (1 + (waveFactor * 0.12)) * diff.hpMult;
-                const dmgGrowth = (1 + (waveFactor * 0.10)) * diff.dmgMult;
+                const hpGrowth = (1 + (waveFactor * 0.08)) * diff.hpMult;
+                const dmgGrowth = (1 + (waveFactor * 0.06)) * diff.dmgMult;
 
-/* DENTRO DO CONSTRUTOR DA CLASSE Asteroid */
-            const diff = difficultySettings[selectedDifficulty];
-            const waveFactor = game.wave - 1; 
-
-// REDUZA estes dois multiplicadores de crescimento por onda:
-            const hpGrowth = (1 + (waveFactor * 0.08)) * diff.hpMult;  // Era 0.12 (reduzido para 0.08)
-            const dmgGrowth = (1 + (waveFactor * 0.06)) * diff.dmgMult; // Era 0.10 (reduzido para 0.06)
-            
-            if (type === 'boss') {
-                this.radius = 36;
-                this.hp = Math.floor(100 * hpGrowth * 2.0); // Era 120 e 2.2x
-                this.speed = 0.5;
-                this.damagePerSec = Math.floor(12 * dmgGrowth);
-                this.goldValue = ship.goldPerKill * 12;
-                this.color = '#ef4444';
-            } else if (type === 'medium') {
-                this.radius = 22;
-                this.hp = Math.floor(15 * hpGrowth); // Era 18
-                this.speed = 0.9;
-                this.damagePerSec = Math.floor(4 * dmgGrowth);
-                this.goldValue = ship.goldPerKill * 3;
-                this.color = '#f97316';
-            } else {
-                this.radius = 13;
-                this.hp = Math.floor(7 * hpGrowth); // Era 8
-                this.speed = 1.3;
-                this.damagePerSec = Math.floor(2 * dmgGrowth);
-                this.goldValue = ship.goldPerKill;
-                this.color = '#94a3b8';
-            }
+                if (type === 'boss') {
+                    this.radius = 36;
+                    this.hp = Math.floor(100 * hpGrowth * 2.0);
+                    this.speed = 0.5;
+                    this.damagePerSec = Math.floor(12 * dmgGrowth);
+                    this.goldValue = ship.goldPerKill * 12;
+                    this.color = '#ef4444';
+                } else if (type === 'medium') {
+                    this.radius = 22;
+                    this.hp = Math.floor(15 * hpGrowth);
+                    this.speed = 0.9;
+                    this.damagePerSec = Math.floor(4 * dmgGrowth);
+                    this.goldValue = ship.goldPerKill * 3;
+                    this.color = '#f97316';
+                } else {
+                    this.radius = 13;
+                    this.hp = Math.floor(7 * hpGrowth);
+                    this.speed = 1.3;
+                    this.damagePerSec = Math.floor(2 * dmgGrowth);
+                    this.goldValue = ship.goldPerKill;
+                    this.color = '#94a3b8';
+                }
+                this.maxHp = this.hp;
 
                 this.vertices = [];
                 const numVerts = Math.floor(Math.random() * 3) + 7;
@@ -787,8 +775,8 @@
 
             const diff = difficultySettings[selectedDifficulty];
             const waveFactor = game.wave - 1;
-            const hpBase = Math.floor(8 * (1 + waveFactor * 0.12) * diff.hpMult);
-            const dmgBase = Math.floor(2 * (1 + waveFactor * 0.10) * diff.dmgMult);
+            const hpBase = Math.floor(7 * (1 + waveFactor * 0.08) * diff.hpMult);
+            const dmgBase = Math.floor(2 * (1 + waveFactor * 0.06) * diff.dmgMult);
             document.getElementById('hud-ast-hp').innerText = hpBase;
             document.getElementById('hud-ast-dmg').innerText = `${dmgBase}/s`;
 
@@ -848,13 +836,11 @@
                 date: new Date().toISOString()
             };
 
-            // Salva Localmente por Garantia
             let localScores = JSON.parse(localStorage.getItem('megahit_sd_scores') || '[]');
             localScores.push(scoreData);
             localScores.sort((a,b) => b.wave - a.wave);
             localStorage.setItem('megahit_sd_scores', JSON.stringify(localScores.slice(0, 10)));
 
-            // Salva no Firebase em Tempo Real
             if (db) {
                 try {
                     db.ref('ranking_space_defense').push(scoreData, (error) => {
