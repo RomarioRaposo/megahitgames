@@ -15,6 +15,7 @@ body {
     align-items: center;
     min-height: 100vh;
     overflow: hidden;
+    touch-action: none; /* Bloqueia gestos nativos do navegador no mobile */
 }
 
 .game-container {
@@ -64,6 +65,7 @@ body {
     background-color: #020617;
     width: 100%;
     height: 100%;
+    touch-action: none;
 }
 
 /* Overlays */
@@ -176,50 +178,4 @@ body {
 
 .ranking-container li {
     margin-bottom: 4px;
-}
-
-/* Controles Mobile */
-.mobile-controls {
-    position: absolute;
-    bottom: 15px;
-    left: 15px;
-    z-index: 10;
-    pointer-events: none;
-}
-
-.dpad {
-    pointer-events: auto;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-}
-
-.horizontal-btns {
-    display: flex;
-    gap: 6px;
-}
-
-.touch-btn {
-    background: rgba(255, 255, 255, 0.12);
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    color: white;
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    font-size: 1.1rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    touch-action: manipulation;
-}
-
-.touch-btn:active {
-    background: rgba(59, 130, 246, 0.6);
-}
-
-@media (min-width: 768px) {
-    .mobile-controls {
-        display: none;
-    }
 }
