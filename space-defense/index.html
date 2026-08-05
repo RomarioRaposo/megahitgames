@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Firebase Compat SDK -->
+    <!-- Firebase Compat SDK v9 -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 
@@ -39,7 +39,7 @@
                 <button onclick="startGameWithDifficulty('facil')" class="w-full bg-slate-800 hover:bg-emerald-950/60 border border-slate-700 hover:border-emerald-500 p-3.5 rounded-xl text-left transition flex items-center justify-between group">
                     <div>
                         <div class="text-sm font-bold text-emerald-400 group-hover:text-emerald-300">🟢 FÁCIL</div>
-                        <div class="text-[11px] text-slate-400">Inimigos mais fracos. Ótimo para partidas casuais.</div>
+                        <div class="text-[11px] text-slate-400">Inimigos com HP reduzido e tiro inicial forte.</div>
                     </div>
                     <span class="text-xs bg-emerald-950 text-emerald-300 font-bold px-2 py-1 rounded border border-emerald-800">1.0x</span>
                 </button>
@@ -47,17 +47,17 @@
                 <button onclick="startGameWithDifficulty('normal')" class="w-full bg-slate-800 hover:bg-amber-950/60 border border-slate-700 hover:border-amber-500 p-3.5 rounded-xl text-left transition flex items-center justify-between group">
                     <div>
                         <div class="text-sm font-bold text-amber-400 group-hover:text-amber-300">🟡 NORMAL</div>
-                        <div class="text-[11px] text-slate-400">Inimigos +60% HP e +50% dano. Upgrades mais caros.</div>
+                        <div class="text-[11px] text-slate-400">Inimigos +30% HP e +20% dano. Progresso equilibrado.</div>
                     </div>
-                    <span class="text-xs bg-amber-950 text-amber-300 font-bold px-2 py-1 rounded border border-amber-800">1.6x</span>
+                    <span class="text-xs bg-amber-950 text-amber-300 font-bold px-2 py-1 rounded border border-amber-800">1.3x</span>
                 </button>
 
                 <button onclick="startGameWithDifficulty('dificil')" class="w-full bg-slate-800 hover:bg-red-950/60 border border-slate-700 hover:border-red-500 p-3.5 rounded-xl text-left transition flex items-center justify-between group">
                     <div>
                         <div class="text-sm font-bold text-red-400 group-hover:text-red-300">🔴 DIFÍCIL</div>
-                        <div class="text-[11px] text-slate-400">Inimigos +130% HP e +100% dano. Escala severa de ondas.</div>
+                        <div class="text-[11px] text-slate-400">Inimigos +70% HP e +50% dano. Alta exigência táctica.</div>
                     </div>
-                    <span class="text-xs bg-red-950 text-red-300 font-bold px-2 py-1 rounded border border-red-800">2.5x</span>
+                    <span class="text-xs bg-red-950 text-red-300 font-bold px-2 py-1 rounded border border-red-800">1.7x</span>
                 </button>
             </div>
         </div>
@@ -76,11 +76,10 @@
             <span id="hud-diff-badge" class="hidden sm:inline-block text-[10px] font-extrabold px-2 py-0.5 rounded-full border">Fácil</span>
         </div>
 
-        <!-- STATUS INIMIGOS -->
         <div class="hidden md:flex items-center gap-4 text-slate-300">
             <div class="flex items-center gap-1">
                 <span class="text-slate-400">HP Inimigo:</span>
-                <span id="hud-ast-hp" class="font-bold text-red-400">10</span>
+                <span id="hud-ast-hp" class="font-bold text-red-400">8</span>
             </div>
             <div class="flex items-center gap-1">
                 <span class="text-slate-400">Ataque/s:</span>
@@ -89,22 +88,18 @@
         </div>
 
         <div class="flex items-center gap-1.5 sm:gap-2">
-            <!-- BOTÃO PARAR / DESISTIR -->
             <button onclick="surrenderGame()" class="bg-red-950/70 hover:bg-red-900 border border-red-500/40 text-red-300 font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full transition text-[11px] sm:text-xs">
                 🛑 Parar
             </button>
 
-            <!-- VELOCIDADE -->
             <button id="btn-speed" onclick="toggleSpeed()" class="bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-300 font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full transition text-[11px] sm:text-xs flex items-center gap-1">
                 ⚡ <span id="speed-label">1x</span>
             </button>
 
-            <!-- OURO -->
             <div class="bg-amber-950/60 border border-amber-500/30 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-amber-300 font-bold flex items-center gap-1 text-xs">
                 <span>🪙</span> <span id="hud-gold" class="text-amber-400 text-xs sm:text-base">0</span>
             </div>
 
-            <!-- RANKING -->
             <button onclick="toggleRankingModal(true)" class="bg-slate-800 hover:bg-slate-700 border border-slate-600 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[11px] sm:text-xs font-semibold text-slate-200 transition">
                 🏆 Rank
             </button>
@@ -227,7 +222,7 @@
             <button onclick="toggleRankingModal(false)" class="absolute top-4 right-4 text-slate-400 hover:text-white font-bold text-xl">✕</button>
             <div id="modal-header-icon" class="text-4xl mb-2">🏆</div>
             <h2 id="modal-title" class="text-xl font-extrabold text-white mb-1">Top 10 Defensores Espaciais</h2>
-            <p id="modal-subtitle" class="text-xs text-slate-400 mb-4">Classificação global registrada via Firebase</p>
+            <p id="modal-subtitle" class="text-xs text-slate-400 mb-4">Classificação global registrada em tempo real</p>
 
             <div class="bg-slate-950 rounded-xl p-3 border border-slate-800 mb-4 max-h-56 overflow-y-auto">
                 <ol id="ranking-list" class="space-y-1.5 text-xs text-left">
@@ -240,7 +235,7 @@
                     <div class="text-xs text-red-300 font-semibold mb-1">Onda Final: <b id="final-wave" class="text-white text-sm">1</b> (<span id="final-diff" class="uppercase text-amber-400">FÁCIL</span>)</div>
                     <input type="text" id="player-name" placeholder="Digite seu nome para o Ranking..." maxlength="15" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500">
                 </div>
-                <button onclick="submitScoreAndRestart()" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3 rounded-xl shadow-lg transition text-sm">
+                <button id="btn-submit-score" onclick="submitScoreAndRestart()" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3 rounded-xl shadow-lg transition text-sm">
                     Salvar Pontuação & Recomeçar
                 </button>
             </div>
@@ -248,7 +243,7 @@
     </div>
 
     <script>
-        /* FIREBASE CONFIG */
+        /* CONFIGURAÇÃO DO FIREBASE */
         const firebaseConfig = {
             apiKey: "AIzaSyCvhEL3kMRMYhPK55tcICbLsWFHd45WgB8",
             authDomain: "megahit-games.firebaseapp.com",
@@ -261,9 +256,13 @@
 
         let db = null;
         try {
-            if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-            db = firebase.database();
-        } catch(e) { console.log("Firebase Fallback Mode"); }
+            if (typeof firebase !== 'undefined') {
+                if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+                db = firebase.database();
+            }
+        } catch(e) {
+            console.log("Modo LocalStorage Ativo:", e);
+        }
 
         /* CANVAS SETUP */
         const canvas = document.getElementById('gameCanvas');
@@ -277,11 +276,11 @@
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
 
-        /* DIFICULDADES E MULTIPLICADORES */
+        /* DIFICULDADES */
         const difficultySettings = {
-            facil:   { name: "Fácil",   hpMult: 1.0, dmgMult: 1.0, costScale: 1.35, initAtkSpd: 1.5, initDmg: 8 },
-            normal:  { name: "Normal",  hpMult: 1.6, dmgMult: 1.5, costScale: 1.48, initAtkSpd: 1.2, initDmg: 6 },
-            dificil: { name: "Difícil", hpMult: 2.3, dmgMult: 2.0, costScale: 1.62, initAtkSpd: 1.0, initDmg: 5 }
+            facil:   { name: "Fácil",   hpMult: 1.0, dmgMult: 1.0, costScale: 1.35, initAtkSpd: 1.8, initDmg: 10 },
+            normal:  { name: "Normal",  hpMult: 1.3, dmgMult: 1.2, costScale: 1.45, initAtkSpd: 1.4, initDmg: 8 },
+            dificil: { name: "Difícil", hpMult: 1.7, dmgMult: 1.5, costScale: 1.55, initAtkSpd: 1.1, initDmg: 6 }
         };
 
         let selectedDifficulty = 'facil';
@@ -290,16 +289,13 @@
             selectedDifficulty = diffKey;
             const diff = difficultySettings[diffKey];
 
-            // Aplicar Atributos Iniciais da Dificuldade
             ship.atkSpeed = diff.initAtkSpd;
             ship.damage = diff.initDmg;
 
-            // Escala de Custo de Upgrades
             for (let key in upgrades) {
                 upgrades[key].scale = diff.costScale;
             }
 
-            // Atualizar Badge visual no HUD
             const badge = document.getElementById('hud-diff-badge');
             badge.innerText = diff.name;
             badge.className = `hidden sm:inline-block text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${
@@ -366,7 +362,7 @@
             wave: 1,
             gold: 0,
             gameOver: false,
-            isPaused: true, // Pausado até escolher dificuldade
+            isPaused: true,
             asteroidsInWave: 10,
             asteroidsSpawned: 0,
             asteroidsDefeated: 0,
@@ -382,8 +378,8 @@
             hp: 100,
             maxHp: 100,
             hpRegen: 0,
-            damage: 8,
-            atkSpeed: 1.5,
+            damage: 10,
+            atkSpeed: 1.8,
             goldPerWave: 25,
             goldPerKill: 2,
             angle: 0,
@@ -393,12 +389,12 @@
         };
 
         const upgrades = {
-            atkSpeed: { lvl: 1, cost: 15, scale: 1.45 },
-            damage:   { lvl: 1, cost: 10, scale: 1.40 },
+            atkSpeed: { lvl: 1, cost: 15, scale: 1.35 },
+            damage:   { lvl: 1, cost: 10, scale: 1.35 },
             hp:       { lvl: 1, cost: 20, scale: 1.35 },
-            hpRegen:  { lvl: 0, cost: 25, scale: 1.50 },
-            goldWave: { lvl: 1, cost: 30, scale: 1.45 },
-            goldKill: { lvl: 1, cost: 40, scale: 1.50 }
+            hpRegen:  { lvl: 0, cost: 25, scale: 1.40 },
+            goldWave: { lvl: 1, cost: 30, scale: 1.40 },
+            goldKill: { lvl: 1, cost: 40, scale: 1.40 }
         };
 
         let bullets = [];
@@ -427,29 +423,29 @@
                 this.id = Math.random().toString(36).substr(2, 9);
 
                 const diff = difficultySettings[selectedDifficulty];
-                const waveFactor = game.wave;
-                const hpMult = (1 + (waveFactor * 0.22)) * diff.hpMult;
-                const dmgMult = (1 + (waveFactor * 0.15)) * diff.dmgMult;
+                const waveFactor = game.wave - 1;
+                const hpGrowth = (1 + (waveFactor * 0.12)) * diff.hpMult;
+                const dmgGrowth = (1 + (waveFactor * 0.10)) * diff.dmgMult;
 
                 if (type === 'boss') {
                     this.radius = 36;
-                    this.hp = Math.floor(180 * hpMult * 2.8);
-                    this.speed = 0.6;
-                    this.damagePerSec = Math.floor(20 * dmgMult);
+                    this.hp = Math.floor(120 * hpGrowth * 2.2);
+                    this.speed = 0.5;
+                    this.damagePerSec = Math.floor(15 * dmgGrowth);
                     this.goldValue = ship.goldPerKill * 12;
                     this.color = '#ef4444';
                 } else if (type === 'medium') {
                     this.radius = 22;
-                    this.hp = Math.floor(30 * hpMult);
-                    this.speed = 1.0;
-                    this.damagePerSec = Math.floor(7 * dmgMult);
+                    this.hp = Math.floor(18 * hpGrowth);
+                    this.speed = 0.9;
+                    this.damagePerSec = Math.floor(5 * dmgGrowth);
                     this.goldValue = ship.goldPerKill * 3;
                     this.color = '#f97316';
                 } else {
                     this.radius = 13;
-                    this.hp = Math.floor(10 * hpMult);
-                    this.speed = 1.6;
-                    this.damagePerSec = Math.floor(3 * dmgMult);
+                    this.hp = Math.floor(8 * hpGrowth);
+                    this.speed = 1.3;
+                    this.damagePerSec = Math.floor(2 * dmgGrowth);
                     this.goldValue = ship.goldPerKill;
                     this.color = '#94a3b8';
                 }
@@ -524,7 +520,7 @@
             constructor(startX, startY, angle, target = null, bouncesLeft = 0, hitHistory = []) {
                 this.x = startX;
                 this.y = startY;
-                this.speed = 9.5;
+                this.speed = 10;
                 this.damage = ship.damage;
                 this.bouncesLeft = bouncesLeft;
                 this.hitHistory = [...hitHistory];
@@ -649,14 +645,14 @@
         }
 
         function handleSpawning() {
-            if (game.asteroidsSpawned < game.asteroidsInWave && Math.random() < 0.025 * gameSpeed) {
+            if (game.asteroidsSpawned < game.asteroidsInWave && Math.random() < 0.02 * gameSpeed) {
                 if (game.wave % 10 === 0) {
                     if (game.asteroidsSpawned === 0) {
                         asteroids.push(new Asteroid('boss'));
                         game.asteroidsSpawned = game.asteroidsInWave;
                     }
                 } else {
-                    const type = Math.random() < 0.25 ? 'medium' : 'small';
+                    const type = Math.random() < 0.20 ? 'medium' : 'small';
                     asteroids.push(new Asteroid(type));
                     game.asteroidsSpawned++;
                 }
@@ -778,8 +774,9 @@
             document.getElementById('hud-gold').innerText = Math.floor(game.gold);
 
             const diff = difficultySettings[selectedDifficulty];
-            const hpBase = Math.floor(10 * (1 + game.wave * 0.22) * diff.hpMult);
-            const dmgBase = Math.floor(2 * (1 + game.wave * 0.15) * diff.dmgMult);
+            const waveFactor = game.wave - 1;
+            const hpBase = Math.floor(8 * (1 + waveFactor * 0.12) * diff.hpMult);
+            const dmgBase = Math.floor(2 * (1 + waveFactor * 0.10) * diff.dmgMult);
             document.getElementById('hud-ast-hp').innerText = hpBase;
             document.getElementById('hud-ast-dmg').innerText = `${dmgBase}/s`;
 
@@ -828,60 +825,51 @@
 
         function submitScoreAndRestart() {
             if (game.scoreSubmitted) return;
-            const nameInput = document.getElementById('player-name').value.trim() || "Piloto Anônimo";
-            
-            if (db) {
-                db.ref('ranking_space_defense').push({
-                    name: `${nameInput} [${difficultySettings[selectedDifficulty].name}]`,
-                    wave: game.wave,
-                    date: new Date().toISOString()
-                });
-            } else {
-                let localScores = JSON.parse(localStorage.getItem('megahit_sd_scores') || '[]');
-                localScores.push({ name: `${nameInput} [${difficultySettings[selectedDifficulty].name}]`, wave: game.wave });
-                localScores.sort((a,b) => b.wave - a.wave);
-                localStorage.setItem('megahit_sd_scores', JSON.stringify(localScores.slice(0, 10)));
-            }
+            const btn = document.getElementById('btn-submit-score');
+            if(btn) btn.disabled = true;
 
-            game.scoreSubmitted = true;
-            location.reload();
+            const rawName = document.getElementById('player-name').value.trim() || "Piloto Anônimo";
+            const fullName = `${rawName} [${difficultySettings[selectedDifficulty].name}]`;
+            const scoreData = {
+                name: fullName,
+                wave: parseInt(game.wave),
+                date: new Date().toISOString()
+            };
+
+            // Salva Localmente por Garantia
+            let localScores = JSON.parse(localStorage.getItem('megahit_sd_scores') || '[]');
+            localScores.push(scoreData);
+            localScores.sort((a,b) => b.wave - a.wave);
+            localStorage.setItem('megahit_sd_scores', JSON.stringify(localScores.slice(0, 10)));
+
+            // Salva no Firebase em Tempo Real
+            if (db) {
+                try {
+                    db.ref('ranking_space_defense').push(scoreData, (error) => {
+                        game.scoreSubmitted = true;
+                        location.reload();
+                    });
+                } catch(e) {
+                    game.scoreSubmitted = true;
+                    location.reload();
+                }
+            } else {
+                game.scoreSubmitted = true;
+                location.reload();
+            }
         }
 
         function loadRanking() {
             const listEl = document.getElementById('ranking-list');
             listEl.innerHTML = '<li class="text-slate-500 text-center py-2">Buscando Melhores Pilotos...</li>';
 
-            if (db) {
-                db.ref('ranking_space_defense').orderByChild('wave').limitToLast(10).once('value', (snapshot) => {
-                    listEl.innerHTML = '';
-                    let scores = [];
-                    snapshot.forEach(child => scores.push(child.val()));
-                    scores.reverse();
-
-                    if (scores.length === 0) {
-                        listEl.innerHTML = '<li class="text-slate-500 text-center py-2">Nenhuma pontuação registrada ainda. Seja o primeiro!</li>';
-                        return;
-                    }
-
-                    scores.forEach((data, index) => {
-                        const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`;
-                        const li = document.createElement('li');
-                        li.className = "flex justify-between items-center bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800";
-                        li.innerHTML = `
-                            <span class="font-bold text-slate-200"><span class="mr-2">${medal}</span>${data.name}</span>
-                            <span class="font-extrabold text-blue-400">Onda ${data.wave}</span>
-                        `;
-                        listEl.appendChild(li);
-                    });
-                });
-            } else {
-                let localScores = JSON.parse(localStorage.getItem('megahit_sd_scores') || '[]');
+            function renderScores(scores) {
                 listEl.innerHTML = '';
-                if (localScores.length === 0) {
-                    listEl.innerHTML = '<li class="text-slate-500 text-center py-2">Sem pontuações salvas.</li>';
+                if (!scores || scores.length === 0) {
+                    listEl.innerHTML = '<li class="text-slate-500 text-center py-2">Nenhuma pontuação registrada ainda. Seja o primeiro!</li>';
                     return;
                 }
-                localScores.forEach((data, index) => {
+                scores.forEach((data, index) => {
                     const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`;
                     const li = document.createElement('li');
                     li.className = "flex justify-between items-center bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800";
@@ -891,6 +879,23 @@
                     `;
                     listEl.appendChild(li);
                 });
+            }
+
+            if (db) {
+                db.ref('ranking_space_defense').orderByChild('wave').limitToLast(10).once('value')
+                .then((snapshot) => {
+                    let scores = [];
+                    snapshot.forEach(child => { scores.push(child.val()); });
+                    scores.sort((a, b) => b.wave - a.wave);
+                    renderScores(scores);
+                })
+                .catch((err) => {
+                    let localScores = JSON.parse(localStorage.getItem('megahit_sd_scores') || '[]');
+                    renderScores(localScores);
+                });
+            } else {
+                let localScores = JSON.parse(localStorage.getItem('megahit_sd_scores') || '[]');
+                renderScores(localScores);
             }
         }
 
