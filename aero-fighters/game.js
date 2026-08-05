@@ -1,3 +1,18 @@
+// Configuração do Firebase mantida integralmente do repositório
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "megahitgames.firebaseapp.com",
+  projectId: "megahitgames",
+  storageBucket: "megahitgames.appspot.com",
+  messagingSenderId: "123456789",
+  appId: "YOUR_APP_ID"
+};
+
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
+const db = firebase.firestore();
+
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
@@ -5,6 +20,7 @@ const scoreVal = document.getElementById('score-val');
 const startScreen = document.getElementById('start-screen');
 const gameOverScreen = document.getElementById('game-over-screen');
 const finalScore = document.getElementById('final-score');
+const leaderboardList = document.getElementById('leaderboard-list');
 
 let gameRunning = false;
 let score = 0;
@@ -51,18 +67,15 @@ function update() {
   const w = canvas.width / window.devicePixelRatio;
   const h = canvas.height / window.devicePixelRatio;
 
-  // Atualizar Jogador
   player.x += player.dx;
   if (player.x < 0) player.x = 0;
   if (player.x + player.width > w) player.x = w - player.width;
 
-  // Atualizar Bullets
   bullets.forEach((b, index) => {
     b.y -= 7;
     if (b.y < 0) bullets.splice(index, 1);
   });
 
-  // Gerar Inimigos
   enemyTimer++;
   if (enemyTimer % 45 === 0) {
     enemies.push({
@@ -74,11 +87,9 @@ function update() {
     });
   }
 
-  // Atualizar Inimigos
   enemies.forEach((enemy, eIdx) => {
     enemy.y += enemy.speed;
 
-    // Colisão com Tiro
     bullets.forEach((bullet, bIdx) => {
       if (
         bullet.x > enemy.x &&
@@ -94,7 +105,6 @@ function update() {
       }
     });
 
-    // Colisão com o Player ou passar do limite
     if (
       player.x < enemy.x + enemy.width &&
       player.x + player.width > enemy.x &&
@@ -107,7 +117,6 @@ function update() {
     if (enemy.y > h) enemies.splice(eIdx, 1);
   });
 
-  // Atualizar Partículas
   particles.forEach((p, i) => {
     p.x += p.vx;
     p.y += p.vy;
@@ -122,7 +131,6 @@ function draw() {
 
   ctx.clearRect(0, 0, w, h);
 
-  // Desenhar Partículas
   particles.forEach(p => {
     ctx.save();
     ctx.globalAlpha = p.alpha;
@@ -131,7 +139,6 @@ function draw() {
     ctx.restore();
   });
 
-  // Desenhar Tiros
   ctx.save();
   ctx.fillStyle = '#ffe600';
   ctx.shadowBlur = 8;
@@ -139,7 +146,6 @@ function draw() {
   bullets.forEach(b => ctx.fillRect(b.x, b.y, 4, 10));
   ctx.restore();
 
-  // Desenhar Inimigos
   ctx.save();
   ctx.fillStyle = '#ff2a6d';
   ctx.shadowBlur = 10;
@@ -154,7 +160,6 @@ function draw() {
   });
   ctx.restore();
 
-  // Desenhar Player
   ctx.save();
   ctx.fillStyle = '#00f0ff';
   ctx.shadowBlur = 12;
@@ -177,6 +182,34 @@ function gameLoop() {
   update();
   draw();
   if (gameRunning) animationFrameId = requestAnimationFrame(gameLoop);
+}
+
+// Persistência de Score via Firebase
+function saveScore(score) {
+  if (score <= 0) return;
+  db.collection("scores_aero_fighters").add({
+    score: score,
+    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(() => {
+    loadLeaderboard();
+  }).catch(err => console.error("Erro ao salvar pontuação: ", err));
+}
+
+function loadLeaderboard() {
+  leaderboardList.innerHTML = "Carregando...";
+  db.collection("scores_aero_fighters")
+    .orderBy("score", "desc")
+    .limit(5)
+    .get()
+    .then(querySnapshot => {
+      leaderboardList.innerHTML = "";
+      querySnapshot.forEach(doc => {
+        const data = doc.data();
+        const li = document.createElement("li");
+        li.innerHTML = `<span>Piloto</span> <strong>${data.score} pts</strong>`;
+        leaderboardList.appendChild(li);
+      });
+    });
 }
 
 function startGame() {
@@ -202,10 +235,10 @@ function endGame() {
   gameRunning = false;
   cancelAnimationFrame(animationFrameId);
   finalScore.textContent = score;
+  saveScore(score);
   gameOverScreen.classList.remove('hidden');
 }
 
-// Eventos de Controle
 window.addEventListener('keydown', e => {
   if (e.key === 'ArrowLeft') player.dx = -player.speed;
   if (e.key === 'ArrowRight') player.dx = player.speed;
@@ -216,7 +249,6 @@ window.addEventListener('keyup', e => {
   if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') player.dx = 0;
 });
 
-// Touch Controls
 const btnLeft = document.getElementById('btn-left');
 const btnRight = document.getElementById('btn-right');
 const btnFire = document.getElementById('btn-fire');
