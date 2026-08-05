@@ -485,28 +485,82 @@ function drawBackground() {
 }
 
 function drawPlayer() {
+    ctx.save();
+
+    // 1. Escudo Energético Brilhante (se ativo)
     if (player.hasShield) {
+        ctx.shadowColor = '#38bdf8';
+        ctx.shadowBlur = 15;
         ctx.strokeStyle = '#38bdf8';
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 3;
         ctx.beginPath();
-        ctx.arc(player.x + player.width / 2, player.y + player.height / 2, 26, 0, Math.PI * 2);
+        ctx.arc(player.x + player.width / 2, player.y + player.height / 2, 28, 0, Math.PI * 2);
         ctx.stroke();
+        ctx.shadowBlur = 0;
     }
 
-    ctx.fillStyle = '#2563eb';
+    const px = player.x;
+    const py = player.y;
+    const pw = player.width;
+    const ph = player.height;
+
+    // 2. Chama da Propulsão Animada
+    const flameHeight = 10 + Math.random() * 6;
+    const flameGrad = ctx.createLinearGradient(0, py + ph - 4, 0, py + ph + flameHeight);
+    flameGrad.addColorStop(0, '#f59e0b');
+    flameGrad.addColorStop(0.5, '#ef4444');
+    flameGrad.addColorStop(1, 'transparent');
+    
+    ctx.fillStyle = flameGrad;
+    ctx.fillRect(px + pw / 2 - 5, py + ph - 4, 4, flameHeight);
+    ctx.fillRect(px + pw / 2 + 1, py + ph - 4, 4, flameHeight);
+
+    // 3. Asas e Fuselagem
+    const bodyGrad = ctx.createLinearGradient(px, py, px + pw, py + ph);
+    bodyGrad.addColorStop(0, '#3b82f6');
+    bodyGrad.addColorStop(0.5, '#1d4ed8');
+    bodyGrad.addColorStop(1, '#1e40af');
+
+    ctx.fillStyle = bodyGrad;
     ctx.beginPath();
-    ctx.moveTo(player.x + player.width / 2, player.y);
-    ctx.lineTo(player.x + player.width, player.y + player.height);
-    ctx.lineTo(player.x + player.width / 2, player.y + player.height - 8);
-    ctx.lineTo(player.x, player.y + player.height);
+    // Bico frontal
+    ctx.moveTo(px + pw / 2, py);
+    // Ponta asa direita
+    ctx.lineTo(px + pw + 6, py + ph - 8);
+    ctx.lineTo(px + pw - 2, py + ph);
+    // Centro traseiro
+    ctx.lineTo(px + pw / 2, py + ph - 6);
+    // Ponta asa esquerda
+    ctx.lineTo(px + 2, py + ph);
+    ctx.lineTo(px - 6, py + ph - 8);
     ctx.closePath();
     ctx.fill();
 
-    ctx.fillStyle = '#38bdf8';
-    ctx.fillRect(player.x + player.width / 2 - 3, player.y + 10, 6, 12);
+    // Detalhes das Asas
+    ctx.fillStyle = '#60a5fa';
+    ctx.fillRect(px - 4, py + ph - 12, 6, 2);
+    ctx.fillRect(px + pw - 2, py + ph - 12, 6, 2);
 
-    ctx.fillStyle = '#f59e0b';
-    ctx.fillRect(player.x + player.width / 2 - 4, player.y + player.height - 2, 8, 8 + Math.random() * 4);
+    // 4. Cockpit com Brilho Neon
+    ctx.shadowColor = '#38bdf8';
+    ctx.shadowBlur = 8;
+    const glassGrad = ctx.createLinearGradient(px, py + 8, px, py + 22);
+    glassGrad.addColorStop(0, '#e0f2fe');
+    glassGrad.addColorStop(1, '#0284c7');
+    
+    ctx.fillStyle = glassGrad;
+    ctx.beginPath();
+    ctx.ellipse(px + pw / 2, py + 16, 4, 9, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // 5. Canhões Visíveis conforme Nível da Arma
+    const weaponColor = player.weaponLevel === 4 ? '#a855f7' : (player.weaponLevel >= 3 ? '#f59e0b' : '#38bdf8');
+    ctx.fillStyle = weaponColor;
+    ctx.fillRect(px - 2, py + 12, 3, 10);
+    ctx.fillRect(px + pw - 1, py + 12, 3, 10);
+
+    ctx.restore();
 }
 
 function drawBullets() {
@@ -520,26 +574,119 @@ function drawBullets() {
 }
 
 function drawEnemies() {
-    ctx.fillStyle = '#10b981';
     enemies.forEach(e => {
+        ctx.save();
+
+        const ex = e.x;
+        const ey = e.y;
+        const ew = e.width;
+        const eh = e.height;
+
+        // Fuselagem Stealth Inimiga
+        const enemyGrad = ctx.createLinearGradient(ex, ey, ex + ew, ey + eh);
+        enemyGrad.addColorStop(0, '#334155');
+        enemyGrad.addColorStop(0.5, '#0f172a');
+        enemyGrad.addColorStop(1, '#020617');
+
+        ctx.fillStyle = enemyGrad;
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 1.5;
+
         ctx.beginPath();
-        ctx.moveTo(e.x + e.width / 2, e.y + e.height);
-        ctx.lineTo(e.x + e.width, e.y);
-        ctx.lineTo(e.x, e.y);
+        ctx.moveTo(ex + ew / 2, ey + eh); // Bico apontando para baixo
+        ctx.lineTo(ex + ew + 4, ey + 4);
+        ctx.lineTo(ex + ew / 2, ey);
+        ctx.lineTo(ex - 4, ey + 4);
         ctx.closePath();
         ctx.fill();
+        ctx.stroke();
+
+        // Núcleo de Energia Neon Verde
+        ctx.shadowColor = '#10b981';
+        ctx.shadowBlur = 6;
+        ctx.fillStyle = '#34d399';
+        ctx.beginPath();
+        ctx.arc(ex + ew / 2, ey + eh / 2, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
     });
 }
 
 function drawBoss() {
     if (!boss) return;
-    ctx.fillStyle = '#ef4444';
-    ctx.fillRect(boss.x, boss.y, boss.width, boss.height);
 
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-    ctx.fillRect(boss.x, boss.y - 14, boss.width, 8);
-    ctx.fillStyle = '#10b981';
-    ctx.fillRect(boss.x, boss.y - 14, (boss.hp / boss.maxHp) * boss.width, 8);
+    ctx.save();
+    const bx = boss.x;
+    const by = boss.y;
+    const bw = boss.width;
+    const bh = boss.height;
+
+    // Sombra/Brilho Vermelho do Boss
+    ctx.shadowColor = '#ef4444';
+    ctx.shadowBlur = 12;
+
+    // 1. Blindagem Principal (Corpo Metalizado)
+    const bossGrad = ctx.createLinearGradient(bx, by, bx, by + bh);
+    bossGrad.addColorStop(0, '#450a0a');
+    bossGrad.addColorStop(0.5, '#7f1d1d');
+    bossGrad.addColorStop(1, '#18181b');
+
+    ctx.fillStyle = bossGrad;
+    ctx.strokeStyle = '#f87171';
+    ctx.lineWidth = 2;
+
+    ctx.beginPath();
+    // Bico inferior central
+    ctx.moveTo(bx + bw / 2, by + bh);
+    // Asas extremas direitas
+    ctx.lineTo(bx + bw + 15, by + bh - 20);
+    ctx.lineTo(bx + bw, by);
+    // Topo central
+    ctx.lineTo(bx + bw / 2, by + 10);
+    // Asas extremas esquerdas
+    ctx.lineTo(bx, by);
+    ctx.lineTo(bx - 15, by + bh - 20);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // 2. Torretas Laterais Duplas
+    ctx.fillStyle = '#dc2626';
+    ctx.fillRect(bx + 10, by + bh - 5, 8, 12);
+    ctx.fillRect(bx + bw - 18, by + bh - 5, 8, 12);
+
+    // 3. Núcleo/Cabine de Cristal Vermelho
+    ctx.shadowColor = '#f43f5e';
+    ctx.shadowBlur = 15;
+    ctx.fillStyle = '#fb7185';
+    ctx.beginPath();
+    ctx.arc(bx + bw / 2, by + bh / 2 - 5, 12, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // 4. Barra de Vida do Boss (Estilo HUD futurista)
+    const barWidth = bw + 20;
+    const barX = bx - 10;
+    const barY = by - 18;
+
+    // Fundo da barra
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
+    ctx.fillRect(barX, barY, barWidth, 10);
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(barX, barY, barWidth, 10);
+
+    // Preenchimento com gradiente de vida
+    const hpRatio = Math.max(0, boss.hp / boss.maxHp);
+    const hpGrad = ctx.createLinearGradient(barX, 0, barX + barWidth, 0);
+    hpGrad.addColorStop(0, '#ef4444');
+    hpGrad.addColorStop(1, '#f59e0b');
+
+    ctx.fillStyle = hpGrad;
+    ctx.fillRect(barX + 1, barY + 1, (barWidth - 2) * hpRatio, 8);
+
+    ctx.restore();
 }
 
 function drawPowerUps() {
