@@ -28,7 +28,7 @@ body {
   width: 100%;
   max-width: 480px;
   height: 100vh;
-  max-height: 800px;
+  max-height: 820px;
   display: flex;
   flex-direction: column;
   position: relative;
@@ -87,7 +87,7 @@ canvas {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(11, 14, 20, 0.85);
+  background: rgba(11, 14, 20, 0.88);
   backdrop-filter: blur(8px);
   display: flex;
   flex-direction: column;
@@ -95,6 +95,7 @@ canvas {
   align-items: center;
   gap: 16px;
   z-index: 20;
+  padding: 20px;
 }
 
 .overlay.hidden {
@@ -102,7 +103,7 @@ canvas {
 }
 
 .overlay h1 {
-  font-size: 2.5rem;
+  font-size: 2.2rem;
   font-weight: 800;
   color: var(--accent-pink);
   text-shadow: 0 0 15px rgba(255, 0, 127, 0.6);
@@ -123,6 +124,35 @@ canvas {
 
 .btn-action:active {
   transform: scale(0.95);
+}
+
+.leaderboard-section {
+  width: 100%;
+  max-width: 300px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 12px;
+  margin: 10px 0;
+  text-align: center;
+}
+
+.leaderboard-section h3 {
+  font-size: 0.9rem;
+  color: var(--accent-yellow);
+  margin-bottom: 8px;
+}
+
+#leaderboard-list {
+  list-style: none;
+  font-size: 0.85rem;
+}
+
+#leaderboard-list li {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .mobile-controls {
