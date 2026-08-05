@@ -34,7 +34,10 @@ const restartBtn = document.getElementById('restart-btn');
 let gameActive = false;
 let score = 0;
 let bestScore = localStorage.getItem('megahit_neonflap_best') || 0;
-bestVal.textContent = bestScore;
+
+if (bestVal) {
+    bestVal.textContent = bestScore;
+}
 
 let lastTime = 0;
 let dt = 0;
@@ -61,13 +64,17 @@ const gapSize = 140;
 window.addEventListener('keydown', e => {
     if (e.code === 'Space' || e.key === ' ') {
         e.preventDefault();
-        jump();
+        if (!gameActive && overlayStart.style.display !== 'none') {
+            startGame();
+        } else {
+            jump();
+        }
     }
 });
 
 canvas.addEventListener('touchstart', e => {
     e.preventDefault();
-    jump();
+    if (gameActive) jump();
 }, { passive: false });
 
 canvas.addEventListener('mousedown', (e) => {
@@ -98,13 +105,12 @@ if (restartBtn) restartBtn.onclick = (e) => { e.stopPropagation(); startGame(); 
 if (saveScoreBtn) saveScoreBtn.onclick = (e) => { e.stopPropagation(); saveRankingScore(); };
 
 function startGame() {
-    // Cancela qualquer loop de animação anterior se estiver rodando
     if (animationFrameId) {
         cancelAnimationFrame(animationFrameId);
     }
 
     score = 0;
-    scoreVal.textContent = score;
+    if (scoreVal) scoreVal.textContent = score;
 
     bird.y = canvas.height / 2;
     bird.velocity = 0;
@@ -119,7 +125,6 @@ function startGame() {
     gameActive = true;
     lastTime = performance.now();
     
-    // Inicia o loop
     animationFrameId = requestAnimationFrame(gameLoop);
 }
 
@@ -132,14 +137,19 @@ function gameOver() {
     if (score > bestScore) {
         bestScore = score;
         localStorage.setItem('megahit_neonflap_best', bestScore);
-        bestVal.textContent = bestScore;
+        if (bestVal) bestVal.textContent = bestScore;
     }
 
-    finalScoreEl.textContent = score;
+    if (finalScoreEl) finalScoreEl.textContent = score;
     overlayGameOver.style.display = 'flex';
-    document.getElementById('nick-form').style.display = 'flex';
-    saveScoreBtn.disabled = false;
-    saveScoreBtn.textContent = 'SALVAR NO RANKING';
+    
+    const nickForm = document.getElementById('nick-form');
+    if (nickForm) nickForm.style.display = 'flex';
+    
+    if (saveScoreBtn) {
+        saveScoreBtn.disabled = false;
+        saveScoreBtn.textContent = 'SALVAR NO RANKING';
+    }
 
     renderLeaderboard();
 }
@@ -197,7 +207,7 @@ function updateObstacles() {
         if (!obs.passed && obs.x + obs.width < bird.x) {
             obs.passed = true;
             score++;
-            scoreVal.textContent = score;
+            if (scoreVal) scoreVal.textContent = score;
         }
 
         if (obs.x + obs.width < -10) obstacles.splice(i, 1);
@@ -309,6 +319,7 @@ function saveLocalLeaderboard(nick, score) {
 }
 
 function renderListUI(ranks) {
+    if (!leaderboardList) return;
     leaderboardList.innerHTML = '';
     if (!ranks || ranks.length === 0) {
         leaderboardList.innerHTML = '<li>Seja o primeiro a pontuar!</li>';
@@ -322,7 +333,7 @@ function renderListUI(ranks) {
 }
 
 async function renderLeaderboard() {
-    leaderboardList.innerHTML = '<li>Carregando ranking...</li>';
+    if (leaderboardList) leaderboardList.innerHTML = '<li>Carregando ranking...</li>';
 
     try {
         const scoresRef = ref(db, 'rankings/neonflap');
@@ -343,9 +354,11 @@ async function renderLeaderboard() {
 }
 
 async function saveRankingScore() {
-    const nick = playerNickInput.value.trim() || 'Piloto Neon';
-    saveScoreBtn.disabled = true;
-    saveScoreBtn.textContent = 'SALVANDO...';
+    const nick = (playerNickInput && playerNickInput.value.trim()) || 'Piloto Neon';
+    if (saveScoreBtn) {
+        saveScoreBtn.disabled = true;
+        saveScoreBtn.textContent = 'SALVANDO...';
+    }
 
     try {
         const scoresRef = ref(db, 'rankings/neonflap');
@@ -358,12 +371,14 @@ async function saveRankingScore() {
         });
 
         saveLocalLeaderboard(nick, score);
-        document.getElementById('nick-form').style.display = 'none';
+        const nickForm = document.getElementById('nick-form');
+        if (nickForm) nickForm.style.display = 'none';
         renderLeaderboard();
     } catch (err) {
         console.warn("Erro ao salvar no Firebase. Salvando localmente:", err);
         const localRanks = saveLocalLeaderboard(nick, score);
-        document.getElementById('nick-form').style.display = 'none';
+        const nickForm = document.getElementById('nick-form');
+        if (nickForm) nickForm.style.display = 'none';
         renderListUI(localRanks);
     }
 }
