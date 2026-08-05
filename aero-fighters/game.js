@@ -1,7 +1,24 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getDatabase, ref, push, set, get, query, orderByChild, limitToLast } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+// Credenciais Reais do Firebase - MegaHit Games
+const firebaseConfig = {
+  apiKey: "AIzaSyCvhEL3kMRMYhPK55tcICbLsWFHd45WgB8",
+  authDomain: "megahit-games.firebaseapp.com",
+  databaseURL: "https://megahit-games-default-rtdb.firebaseio.com",
+  projectId: "megahit-games",
+  storageBucket: "megahit-games.firebasestorage.app",
+  messagingSenderId: "595034446210",
+  appId: "1:595034446210:web:01f430b992d529988cd79b"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// UI Elements
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-// UI
 const scoreVal = document.getElementById('score-val');
 const livesVal = document.getElementById('lives-val');
 const overlayStart = document.getElementById('overlay-start');
@@ -21,7 +38,8 @@ let lives = 3;
 let currentStage = 1;
 const TOTAL_STAGES = 10;
 let stageKills = 0;
-let killsToBoss = 15; // Inimigos necessários para chamar o Boss da fase
+let killsToBoss = 12;
+let bossSpawned = false;
 let stageBannerTimer = 0;
 
 let lastTime = 0;
@@ -34,21 +52,20 @@ let isTouching = false;
 let targetTouchX = null;
 let targetTouchY = null;
 
-// Paleta de Cores de Fundo por Fase
+// Temas Visuais por Fase
 const STAGE_THEMES = [
-    { bg: '#020617', star: '#ffffff' }, // Fase 1: Espaço Noturno
-    { bg: '#0f172a', star: '#38bdf8' }, // Fase 2: Nebulosa Azul
-    { bg: '#1e1b4b', star: '#a855f7' }, // Fase 3: Galáxia Roxa
-    { bg: '#31121f', star: '#f43f5e' }, // Fase 4: Órbita Carmim
-    { bg: '#064e3b', star: '#34d399' }, // Fase 5: Setor Esmeralda
-    { bg: '#172554', star: '#60a5fa' }, // Fase 6: Cinturão Ciano
-    { bg: '#451a03', star: '#fbbf24' }, // Fase 7: Tempestade Âmbar
-    { bg: '#2e1065', star: '#c084fc' }, // Fase 8: Vazio Violeta
-    { bg: '#111827', star: '#9ca3af' }, // Fase 9: Campo Sombrio
-    { bg: '#4c0519', star: '#fda4af' }  // Fase 10: Núcleo Infernal
+    { bg: '#020617', star: '#ffffff' },
+    { bg: '#0f172a', star: '#38bdf8' },
+    { bg: '#1e1b4b', star: '#a855f7' },
+    { bg: '#31121f', star: '#f43f5e' },
+    { bg: '#064e3b', star: '#34d399' },
+    { bg: '#172554', star: '#60a5fa' },
+    { bg: '#451a03', star: '#fbbf24' },
+    { bg: '#2e1065', star: '#c084fc' },
+    { bg: '#111827', star: '#9ca3af' },
+    { bg: '#4c0519', star: '#fda4af' }
 ];
 
-// Fundo Estrelado
 const stars = Array.from({ length: 70 }, () => ({
     x: Math.random() * canvas.width,
     y: Math.random() * canvas.height,
@@ -56,7 +73,6 @@ const stars = Array.from({ length: 70 }, () => ({
     speed: Math.random() * 120 + 40
 }));
 
-// Jogador
 const player = {
     x: canvas.width / 2 - 16,
     y: canvas.height - 90,
@@ -67,7 +83,6 @@ const player = {
     hasShield: false
 };
 
-// Entidades
 let bullets = [];
 let enemyBullets = [];
 let enemies = [];
@@ -75,7 +90,7 @@ let particles = [];
 let powerUps = [];
 let boss = null;
 
-// Eventos
+// Eventos de Teclado e Touch
 window.addEventListener('keydown', e => handleKey(e, true));
 window.addEventListener('keyup', e => handleKey(e, false));
 
@@ -101,7 +116,7 @@ function handleTouchMove(e) {
     const touchY = (touch.clientY - rect.top) * (canvas.height / rect.height);
 
     targetTouchX = touchX - player.width / 2;
-    const FINGER_OFFSET_Y = 90; // Offset ajustado
+    const FINGER_OFFSET_Y = 90;
     targetTouchY = touchY - player.height / 2 - FINGER_OFFSET_Y;
 
     isTouching = true;
@@ -115,16 +130,7 @@ function startGame() {
     score = 0;
     lives = 3;
     currentStage = 1;
-    stageKills = 0;
-    killsToBoss = 12;
-    stageBannerTimer = 2.5;
-
-    bullets = [];
-    enemyBullets = [];
-    enemies = [];
-    particles = [];
-    powerUps = [];
-    boss = null;
+    resetStageState();
 
     player.x = canvas.width / 2 - 16;
     player.y = canvas.height - 90;
@@ -141,18 +147,26 @@ function startGame() {
     requestAnimationFrame(gameLoop);
 }
 
+function resetStageState() {
+    stageKills = 0;
+    killsToBoss = 10 + currentStage * 4;
+    bossSpawned = false;
+    boss = null;
+    enemies = [];
+    enemyBullets = [];
+    bullets = [];
+    powerUps = [];
+    stageBannerTimer = 3.0;
+}
+
 function nextStage() {
     if (currentStage >= TOTAL_STAGES) {
-        gameOver(true); // Venceu o jogo completo!
+        gameOver(true);
         return;
     }
 
     currentStage++;
-    stageKills = 0;
-    killsToBoss = 12 + currentStage * 3;
-    stageBannerTimer = 2.5; // Exibe alerta de nova fase por 2.5s
-    enemies = [];
-    enemyBullets = [];
+    resetStageState();
 }
 
 function gameOver(won = false) {
@@ -163,32 +177,10 @@ function gameOver(won = false) {
 
     overlayGameOver.style.display = 'flex';
     document.getElementById('nick-form').style.display = 'flex';
+    saveScoreBtn.disabled = false;
+    saveScoreBtn.textContent = 'SALVAR NO RANKING';
+
     renderLeaderboard();
-}
-
-// LocalStorage Ranking
-function getLeaderboard() {
-    return JSON.parse(localStorage.getItem('megahit_aerofighters_ranks') || '[]');
-}
-
-function saveRankingScore() {
-    const nick = playerNickInput.value.trim() || 'Piloto';
-    const ranks = getLeaderboard();
-    ranks.push({ nick, score });
-    ranks.sort((a, b) => b.score - a.score);
-    localStorage.setItem('megahit_aerofighters_ranks', JSON.stringify(ranks.slice(0, 10)));
-    document.getElementById('nick-form').style.display = 'none';
-    renderLeaderboard();
-}
-
-function renderLeaderboard() {
-    const ranks = getLeaderboard();
-    leaderboardList.innerHTML = ranks.length === 0 ? '<li>Sem registros.</li>' : '';
-    ranks.forEach(item => {
-        const li = document.createElement('li');
-        li.innerHTML = `<strong>${item.nick}</strong>: ${item.score} pts`;
-        leaderboardList.appendChild(li);
-    });
 }
 
 // Loop Principal
@@ -294,7 +286,9 @@ function updateBullets() {
 }
 
 function spawnEnemies() {
-    if (!boss && stageKills < killsToBoss && Math.random() < 0.02 + currentStage * 0.005) {
+    if (stageBannerTimer > 0) return;
+
+    if (!bossSpawned && stageKills < killsToBoss && Math.random() < 0.02 + currentStage * 0.005) {
         enemies.push({
             x: Math.random() * (canvas.width - 32),
             y: -40,
@@ -305,8 +299,8 @@ function spawnEnemies() {
         });
     }
 
-    // Invocação do Boss ao atingir meta de abates da fase
-    if (stageKills >= killsToBoss && !boss) {
+    if (stageKills >= killsToBoss && !bossSpawned) {
+        bossSpawned = true;
         boss = {
             x: canvas.width / 2 - 60,
             y: -100,
@@ -351,10 +345,9 @@ function updateBoss() {
     }
 }
 
-// Power-Ups (Incluindo Vida 'H')
 function spawnPowerUp(x, y) {
     if (Math.random() < 0.3) {
-        const types = ['P', 'P', 'S', 'B', 'H']; // H = Heal
+        const types = ['P', 'P', 'S', 'B', 'H'];
         const type = types[Math.floor(Math.random() * types.length)];
         powerUps.push({ x, y, type, speed: 90 });
     }
@@ -439,7 +432,7 @@ function checkCollisions() {
                 score += 500 * currentStage;
                 scoreVal.textContent = score;
                 boss = null;
-                setTimeout(() => nextStage(), 1000);
+                setTimeout(() => nextStage(), 800);
             }
         }
     });
@@ -474,7 +467,7 @@ function hitPlayer() {
     if (lives <= 0) gameOver(false);
 }
 
-// Renderização Dinâmica
+// Renderização
 function drawBackground() {
     const theme = STAGE_THEMES[(currentStage - 1) % STAGE_THEMES.length];
     ctx.fillStyle = theme.bg;
@@ -487,7 +480,6 @@ function drawBackground() {
 function drawPlayer() {
     ctx.save();
 
-    // 1. Escudo Energético Brilhante (se ativo)
     if (player.hasShield) {
         ctx.shadowColor = '#38bdf8';
         ctx.shadowBlur = 15;
@@ -504,7 +496,6 @@ function drawPlayer() {
     const pw = player.width;
     const ph = player.height;
 
-    // 2. Chama da Propulsão Animada
     const flameHeight = 10 + Math.random() * 6;
     const flameGrad = ctx.createLinearGradient(0, py + ph - 4, 0, py + ph + flameHeight);
     flameGrad.addColorStop(0, '#f59e0b');
@@ -515,7 +506,6 @@ function drawPlayer() {
     ctx.fillRect(px + pw / 2 - 5, py + ph - 4, 4, flameHeight);
     ctx.fillRect(px + pw / 2 + 1, py + ph - 4, 4, flameHeight);
 
-    // 3. Asas e Fuselagem
     const bodyGrad = ctx.createLinearGradient(px, py, px + pw, py + ph);
     bodyGrad.addColorStop(0, '#3b82f6');
     bodyGrad.addColorStop(0.5, '#1d4ed8');
@@ -523,25 +513,19 @@ function drawPlayer() {
 
     ctx.fillStyle = bodyGrad;
     ctx.beginPath();
-    // Bico frontal
     ctx.moveTo(px + pw / 2, py);
-    // Ponta asa direita
     ctx.lineTo(px + pw + 6, py + ph - 8);
     ctx.lineTo(px + pw - 2, py + ph);
-    // Centro traseiro
     ctx.lineTo(px + pw / 2, py + ph - 6);
-    // Ponta asa esquerda
     ctx.lineTo(px + 2, py + ph);
     ctx.lineTo(px - 6, py + ph - 8);
     ctx.closePath();
     ctx.fill();
 
-    // Detalhes das Asas
     ctx.fillStyle = '#60a5fa';
     ctx.fillRect(px - 4, py + ph - 12, 6, 2);
     ctx.fillRect(px + pw - 2, py + ph - 12, 6, 2);
 
-    // 4. Cockpit com Brilho Neon
     ctx.shadowColor = '#38bdf8';
     ctx.shadowBlur = 8;
     const glassGrad = ctx.createLinearGradient(px, py + 8, px, py + 22);
@@ -554,7 +538,6 @@ function drawPlayer() {
     ctx.fill();
     ctx.shadowBlur = 0;
 
-    // 5. Canhões Visíveis conforme Nível da Arma
     const weaponColor = player.weaponLevel === 4 ? '#a855f7' : (player.weaponLevel >= 3 ? '#f59e0b' : '#38bdf8');
     ctx.fillStyle = weaponColor;
     ctx.fillRect(px - 2, py + 12, 3, 10);
@@ -576,13 +559,11 @@ function drawBullets() {
 function drawEnemies() {
     enemies.forEach(e => {
         ctx.save();
-
         const ex = e.x;
         const ey = e.y;
         const ew = e.width;
         const eh = e.height;
 
-        // Fuselagem Stealth Inimiga
         const enemyGrad = ctx.createLinearGradient(ex, ey, ex + ew, ey + eh);
         enemyGrad.addColorStop(0, '#334155');
         enemyGrad.addColorStop(0.5, '#0f172a');
@@ -593,7 +574,7 @@ function drawEnemies() {
         ctx.lineWidth = 1.5;
 
         ctx.beginPath();
-        ctx.moveTo(ex + ew / 2, ey + eh); // Bico apontando para baixo
+        ctx.moveTo(ex + ew / 2, ey + eh);
         ctx.lineTo(ex + ew + 4, ey + 4);
         ctx.lineTo(ex + ew / 2, ey);
         ctx.lineTo(ex - 4, ey + 4);
@@ -601,7 +582,6 @@ function drawEnemies() {
         ctx.fill();
         ctx.stroke();
 
-        // Núcleo de Energia Neon Verde
         ctx.shadowColor = '#10b981';
         ctx.shadowBlur = 6;
         ctx.fillStyle = '#34d399';
@@ -622,11 +602,9 @@ function drawBoss() {
     const bw = boss.width;
     const bh = boss.height;
 
-    // Sombra/Brilho Vermelho do Boss
     ctx.shadowColor = '#ef4444';
     ctx.shadowBlur = 12;
 
-    // 1. Blindagem Principal (Corpo Metalizado)
     const bossGrad = ctx.createLinearGradient(bx, by, bx, by + bh);
     bossGrad.addColorStop(0, '#450a0a');
     bossGrad.addColorStop(0.5, '#7f1d1d');
@@ -637,26 +615,20 @@ function drawBoss() {
     ctx.lineWidth = 2;
 
     ctx.beginPath();
-    // Bico inferior central
     ctx.moveTo(bx + bw / 2, by + bh);
-    // Asas extremas direitas
     ctx.lineTo(bx + bw + 15, by + bh - 20);
     ctx.lineTo(bx + bw, by);
-    // Topo central
     ctx.lineTo(bx + bw / 2, by + 10);
-    // Asas extremas esquerdas
     ctx.lineTo(bx, by);
     ctx.lineTo(bx - 15, by + bh - 20);
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
 
-    // 2. Torretas Laterais Duplas
     ctx.fillStyle = '#dc2626';
     ctx.fillRect(bx + 10, by + bh - 5, 8, 12);
     ctx.fillRect(bx + bw - 18, by + bh - 5, 8, 12);
 
-    // 3. Núcleo/Cabine de Cristal Vermelho
     ctx.shadowColor = '#f43f5e';
     ctx.shadowBlur = 15;
     ctx.fillStyle = '#fb7185';
@@ -665,19 +637,16 @@ function drawBoss() {
     ctx.fill();
     ctx.shadowBlur = 0;
 
-    // 4. Barra de Vida do Boss (Estilo HUD futurista)
     const barWidth = bw + 20;
     const barX = bx - 10;
     const barY = by - 18;
 
-    // Fundo da barra
     ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
     ctx.fillRect(barX, barY, barWidth, 10);
     ctx.strokeStyle = '#334155';
     ctx.lineWidth = 1;
     ctx.strokeRect(barX, barY, barWidth, 10);
 
-    // Preenchimento com gradiente de vida
     const hpRatio = Math.max(0, boss.hp / boss.maxHp);
     const hpGrad = ctx.createLinearGradient(barX, 0, barX + barWidth, 0);
     hpGrad.addColorStop(0, '#ef4444');
@@ -710,14 +679,94 @@ function drawParticles() {
 }
 
 function drawHUDOverlay() {
-    // Alerta de Mudança de Fase
     if (stageBannerTimer > 0) {
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.7)';
-        ctx.fillRect(0, canvas.height / 2 - 40, canvas.width, 80);
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+        ctx.fillRect(0, canvas.height / 2 - 45, canvas.width, 90);
 
         ctx.fillStyle = '#f59e0b';
-        ctx.font = 'bold 24px sans-serif';
+        ctx.font = 'bold 22px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(`FASE ${currentStage} DE ${TOTAL_STAGES}`, canvas.width / 2, canvas.height / 2 + 8);
+        ctx.fillText(`FASE ${currentStage} DE ${TOTAL_STAGES}`, canvas.width / 2, canvas.height / 2 - 5);
+
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '14px sans-serif';
+        ctx.fillText(`Destrua ${killsToBoss} naves inimigas para invocar o Boss`, canvas.width / 2, canvas.height / 2 + 22);
+    }
+}
+
+// ==========================================
+// RANKING GLOBAL & LOCAL FALLBACK
+// ==========================================
+
+function getLocalLeaderboard() {
+    return JSON.parse(localStorage.getItem('megahit_aerofighters_ranks') || '[]');
+}
+
+function saveLocalLeaderboard(nick, score) {
+    let ranks = getLocalLeaderboard();
+    ranks.push({ nick, score });
+    ranks.sort((a, b) => b.score - a.score);
+    ranks = ranks.slice(0, 10);
+    localStorage.setItem('megahit_aerofighters_ranks', JSON.stringify(ranks));
+    return ranks;
+}
+
+function renderListUI(ranks) {
+    leaderboardList.innerHTML = '';
+    if (!ranks || ranks.length === 0) {
+        leaderboardList.innerHTML = '<li>Seja o primeiro a pontuar!</li>';
+        return;
+    }
+    ranks.forEach((item, index) => {
+        const li = document.createElement('li');
+        li.innerHTML = `<strong>#${index + 1} ${item.nick}</strong>: ${item.score} pts`;
+        leaderboardList.appendChild(li);
+    });
+}
+
+async function renderLeaderboard() {
+    leaderboardList.innerHTML = '<li>Carregando ranking...</li>';
+
+    try {
+        const scoresRef = ref(db, 'rankings/aerofighters');
+        const topScoresQuery = query(scoresRef, orderByChild('score'), limitToLast(10));
+        const snapshot = await get(topScoresQuery);
+
+        if (snapshot.exists()) {
+            const data = snapshot.val();
+            const list = Object.values(data).sort((a, b) => b.score - a.score);
+            renderListUI(list);
+        } else {
+            renderListUI([]);
+        }
+    } catch (err) {
+        console.warn("Firebase offline/bloqueado. Carregando ranking local:", err);
+        renderListUI(getLocalLeaderboard());
+    }
+}
+
+async function saveRankingScore() {
+    const nick = playerNickInput.value.trim() || 'Piloto';
+    saveScoreBtn.disabled = true;
+    saveScoreBtn.textContent = 'SALVANDO...';
+
+    try {
+        const scoresRef = ref(db, 'rankings/aerofighters');
+        const newScoreRef = push(scoresRef);
+
+        await set(newScoreRef, {
+            nick: nick,
+            score: score,
+            timestamp: Date.now()
+        });
+
+        saveLocalLeaderboard(nick, score);
+        document.getElementById('nick-form').style.display = 'none';
+        renderLeaderboard();
+    } catch (err) {
+        console.warn("Erro ao salvar no Firebase. Salvando localmente:", err);
+        const localRanks = saveLocalLeaderboard(nick, score);
+        document.getElementById('nick-form').style.display = 'none';
+        renderListUI(localRanks);
     }
 }
