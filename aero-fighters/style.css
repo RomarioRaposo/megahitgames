@@ -83,6 +83,7 @@ canvas {
   align-items: center;
   gap: 16px;
   z-index: 20;
+  padding: 20px;
 }
 
 .overlay.hidden { display: none; }
@@ -103,6 +104,35 @@ canvas {
   font-weight: 800;
   border-radius: 30px;
   cursor: pointer;
+}
+
+.leaderboard-section {
+  width: 100%;
+  max-width: 300px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 12px;
+  margin: 10px 0;
+  text-align: center;
+}
+
+.leaderboard-section h3 {
+  font-size: 0.9rem;
+  color: var(--accent-cyan);
+  margin-bottom: 8px;
+}
+
+#leaderboard-list {
+  list-style: none;
+  font-size: 0.85rem;
+}
+
+#leaderboard-list li {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .mobile-controls {
