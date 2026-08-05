@@ -2,7 +2,7 @@ const themeToggleBtn = document.getElementById('theme-toggle');
 const themeIcon = document.getElementById('theme-icon');
 const htmlElement = document.documentElement;
 
-// Recupera o tema salvo no navegador ou define 'light' como padrão
+// Recupera o tema salvo ou usa 'light' como padrão
 const savedTheme = localStorage.getItem('theme') || 'light';
 setTheme(savedTheme);
 
