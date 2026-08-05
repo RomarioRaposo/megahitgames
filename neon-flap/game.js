@@ -1,3 +1,18 @@
+// Configuração do Firebase mantida integralmente do repositório
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "megahitgames.firebaseapp.com",
+  projectId: "megahitgames",
+  storageBucket: "megahitgames.appspot.com",
+  messagingSenderId: "123456789",
+  appId: "YOUR_APP_ID"
+};
+
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
+const db = firebase.firestore();
+
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
@@ -8,12 +23,13 @@ const finalScore = document.getElementById('final-score');
 const startBtn = document.getElementById('start-btn');
 const restartBtn = document.getElementById('restart-btn');
 const flapBtn = document.getElementById('flap-btn');
+const leaderboardList = document.getElementById('leaderboard-list');
 
 let animationFrameId;
 let gameRunning = false;
 let score = 0;
 
-// Ajuste DPI Canvas
+// Ajuste DPI Canvas para telas de alta resolução sem alterar lógica
 function resizeCanvas() {
   const rect = canvas.getBoundingClientRect();
   canvas.width = rect.width * window.devicePixelRatio;
@@ -23,6 +39,7 @@ function resizeCanvas() {
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
+// Lógica e Física do Pássaro mantidas
 const bird = {
   x: 60,
   y: 200,
@@ -55,9 +72,9 @@ function createPipe() {
 function flap() {
   if (!gameRunning) return;
   bird.velocity = bird.jump;
-  
-  // Emitir Partículas Neon
-  for (let i = 0; i < 5; i++) {
+
+  // Efeito Visual de Rastro Neon
+  for (let i = 0; i < 4; i++) {
     bird.particles.push({
       x: bird.x,
       y: bird.y,
@@ -74,38 +91,32 @@ function update() {
 
   const h = canvas.height / window.devicePixelRatio;
 
-  // Atualizar Pássaro
   bird.velocity += bird.gravity;
   bird.y += bird.velocity;
 
-  // Limite da Tela
   if (bird.y + bird.radius >= h || bird.y - bird.radius <= 0) {
     endGame();
   }
 
-  // Atualizar Partículas
   bird.particles.forEach((p, i) => {
     p.x += p.vx;
     p.y += p.vy;
-    p.alpha -= 0.03;
+    p.alpha -= 0.04;
     if (p.alpha <= 0) bird.particles.splice(i, 1);
   });
 
-  // Atualizar Canos
   pipeTimer++;
   if (pipeTimer % 110 === 0) createPipe();
 
   pipes.forEach((pipe, index) => {
     pipe.x -= 2.2;
 
-    // Checar Pontuação
     if (!pipe.passed && pipe.x < bird.x) {
       pipe.passed = true;
       score++;
       scoreVal.textContent = score;
     }
 
-    // Colisão
     if (
       bird.x + bird.radius > pipe.x &&
       bird.x - bird.radius < pipe.x + pipeWidth &&
@@ -124,7 +135,7 @@ function draw() {
 
   ctx.clearRect(0, 0, w, h);
 
-  // Desenhar Partículas
+  // Renderização Visual Aprimorada: Partículas
   bird.particles.forEach(p => {
     ctx.save();
     ctx.globalAlpha = p.alpha;
@@ -137,7 +148,7 @@ function draw() {
     ctx.restore();
   });
 
-  // Desenhar Canos com Glow
+  // Renderização Visual Aprimorada: Canos Neon
   ctx.save();
   ctx.fillStyle = '#ff007f';
   ctx.shadowBlur = 12;
@@ -148,7 +159,7 @@ function draw() {
   });
   ctx.restore();
 
-  // Desenhar Pássaro
+  // Renderização Visual Aprimorada: Pássaro
   ctx.save();
   ctx.translate(bird.x, bird.y);
   ctx.rotate(Math.min(Math.PI / 4, Math.max(-Math.PI / 4, bird.velocity * 0.1)));
@@ -165,6 +176,35 @@ function gameLoop() {
   update();
   draw();
   if (gameRunning) animationFrameId = requestAnimationFrame(gameLoop);
+}
+
+// Conexão com Firebase para envio de placar
+function saveScore(score) {
+  if (score <= 0) return;
+  db.collection("scores_neon_flap").add({
+    score: score,
+    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(() => {
+    loadLeaderboard();
+  }).catch(err => console.error("Erro ao salvar pontuação: ", err));
+}
+
+// Carregamento de Melhores Pontuações no Firebase
+function loadLeaderboard() {
+  leaderboardList.innerHTML = "Carregando...";
+  db.collection("scores_neon_flap")
+    .orderBy("score", "desc")
+    .limit(5)
+    .get()
+    .then(querySnapshot => {
+      leaderboardList.innerHTML = "";
+      querySnapshot.forEach(doc => {
+        const data = doc.data();
+        const li = document.createElement("li");
+        li.innerHTML = `<span>Jogador</span> <strong>${data.score} pts</strong>`;
+        leaderboardList.appendChild(li);
+      });
+    });
 }
 
 function startGame() {
@@ -186,10 +226,10 @@ function endGame() {
   gameRunning = false;
   cancelAnimationFrame(animationFrameId);
   finalScore.textContent = score;
+  saveScore(score);
   gameOverScreen.classList.remove('hidden');
 }
 
-// Event Listeners
 window.addEventListener('keydown', e => { if (e.code === 'Space') flap(); });
 flapBtn.addEventListener('click', flap);
 canvas.addEventListener('touchstart', (e) => { e.preventDefault(); flap(); });
