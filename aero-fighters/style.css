@@ -7,9 +7,9 @@
 }
 
 body {
-    background-color: #0b0f19;
+    background-color: #030712;
     color: #ffffff;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: system-ui, -apple-system, sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -27,15 +27,15 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
-    border-radius: 8px;
+    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.9);
+    border-radius: 12px;
     overflow: hidden;
 }
 
 .game-header {
     width: 100%;
-    padding: 10px 15px;
-    background: rgba(15, 23, 42, 0.9);
+    padding: 12px 18px;
+    background: rgba(15, 23, 42, 0.95);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -46,12 +46,12 @@ body {
 .back-btn {
     color: #3b82f6;
     text-decoration: none;
-    font-size: 0.85rem;
-    font-weight: bold;
+    font-size: 0.9rem;
+    font-weight: 700;
 }
 
 .hud {
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     display: flex;
     gap: 15px;
 }
@@ -61,19 +61,19 @@ body {
 }
 
 #gameCanvas {
-    background-color: #030712;
+    background-color: #020617;
     width: 100%;
     height: 100%;
 }
 
-/* Overlay Game Over / Start */
+/* Overlays */
 .overlay {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(15, 23, 42, 0.92);
+    background: rgba(15, 23, 42, 0.95);
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -81,67 +81,133 @@ body {
     text-align: center;
     padding: 20px;
     z-index: 20;
+    overflow-y: auto;
 }
 
 .overlay h1 {
-    font-size: 2rem;
-    color: #ef4444;
-    margin-bottom: 10px;
-    letter-spacing: 2px;
+    font-size: 2.2rem;
+    color: #3b82f6;
+    margin-bottom: 8px;
+    letter-spacing: 1px;
 }
 
 .overlay p {
     color: #94a3b8;
-    margin-bottom: 25px;
+    margin-bottom: 20px;
     font-size: 0.95rem;
+    max-width: 320px;
 }
 
 .btn {
     background: #2563eb;
     color: #fff;
     border: none;
-    padding: 12px 28px;
-    font-size: 1rem;
-    font-weight: bold;
-    border-radius: 6px;
+    padding: 12px 24px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    border-radius: 8px;
     cursor: pointer;
     transition: background 0.2s;
+    width: 100%;
+    max-width: 280px;
+    margin-top: 8px;
 }
 
 .btn:hover {
     background: #1d4ed8;
 }
 
+.btn-secondary {
+    background: #475569;
+}
+
+.btn-secondary:hover {
+    background: #334155;
+}
+
+/* Formulário de Nick & Ranking */
+.nick-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    max-width: 280px;
+    margin-bottom: 15px;
+}
+
+.nick-form input {
+    padding: 10px 14px;
+    border-radius: 6px;
+    border: 1px solid #334155;
+    background: #1e293b;
+    color: #fff;
+    font-size: 1rem;
+    text-align: center;
+}
+
+.nick-form input:focus {
+    outline: none;
+    border-color: #3b82f6;
+}
+
+.ranking-container {
+    width: 100%;
+    max-width: 280px;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 15px;
+    text-align: left;
+}
+
+.ranking-container h3 {
+    font-size: 0.9rem;
+    color: #f59e0b;
+    margin-bottom: 8px;
+    text-align: center;
+}
+
+.ranking-container ol {
+    padding-left: 20px;
+    font-size: 0.85rem;
+    color: #cbd5e1;
+}
+
+.ranking-container li {
+    margin-bottom: 4px;
+}
+
 /* Controles Mobile */
 .mobile-controls {
     position: absolute;
-    bottom: 10px;
-    width: 100%;
-    padding: 0 15px;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
+    bottom: 15px;
+    left: 15px;
     z-index: 10;
     pointer-events: none;
 }
 
-.dpad, .action-btns {
+.dpad {
     pointer-events: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
 }
 
 .horizontal-btns {
     display: flex;
-    gap: 5px;
+    gap: 6px;
 }
 
 .touch-btn {
-    background: rgba(255, 255, 255, 0.15);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.25);
     color: white;
-    width: 45px;
-    height: 45px;
+    width: 50px;
+    height: 50px;
     border-radius: 50%;
-    font-size: 1rem;
+    font-size: 1.1rem;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -152,28 +218,8 @@ body {
     background: rgba(59, 130, 246, 0.6);
 }
 
-.dpad {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 5px;
-}
-
-.fire-btn {
-    width: 65px;
-    height: 65px;
-    background: rgba(239, 68, 68, 0.4);
-    border-color: rgba(239, 68, 68, 0.7);
-    font-size: 0.8rem;
-    font-weight: bold;
-}
-
-.fire-btn:active {
-    background: rgba(239, 68, 68, 0.8);
-}
-
 @media (min-width: 768px) {
     .mobile-controls {
-        display: none; /* Esconde botões touch em computadores */
+        display: none;
     }
 }
