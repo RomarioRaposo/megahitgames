@@ -1,20 +1,24 @@
-// Configuração Firebase
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getDatabase, ref, push, set, get, query, orderByChild, limitToLast } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+// Firebase Config
 const firebaseConfig = {
-    apiKey: "SUA_API_KEY",
-    authDomain: "seu-projeto.firebaseapp.com",
-    databaseURL: "https://seu-projeto-default-rtdb.firebaseio.com",
-    projectId: "seu-projeto",
-    storageBucket: "seu-projeto.appspot.com",
-    messagingSenderId: "123456789",
-    appId: "1:123456789:web:abcde12345"
+  apiKey: "AIzaSyCvhEL3kMRMYhPK55tcICbLsWFHd45WgB8",
+  authDomain: "megahit-games.firebaseapp.com",
+  databaseURL: "https://megahit-games-default-rtdb.firebaseio.com",
+  projectId: "megahit-games",
+  storageBucket: "megahit-games.firebasestorage.app",
+  messagingSenderId: "595034446210",
+  appId: "1:595034446210:web:01f430b992d529988cd79b"
 };
 
-if (!firebase.apps.length) {
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+if (typeof firebase !== 'undefined' && !firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
-const db = firebase.database();
 
-// Inicialização do Canvas
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
@@ -25,90 +29,105 @@ function resizeCanvas() {
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
-// Estado do Jogo e Nave
+// Multiplicador de Velocidade
+let gameSpeed = 1;
+const speeds = [1, 2, 3, 4];
+function toggleSpeed() {
+    let idx = speeds.indexOf(gameSpeed);
+    gameSpeed = speeds[(idx + 1) % speeds.length];
+    document.getElementById('btn-speed').innerText = `⚡ ${gameSpeed}x`;
+}
+
+// Estado do Jogo
 const game = {
     wave: 1,
     gold: 0,
     gameOver: false,
-    asteroidsInWave: 10,
+    asteroidsInWave: 8,
     asteroidsSpawned: 0,
     asteroidsDefeated: 0,
-    lastShot: 0
+    lastShot: 0,
+    shipAngle: 0
 };
 
 const ship = {
     x: canvas.width / 2,
     y: canvas.height / 2,
     radius: 18,
-    attackRange: 160,
+    attackRange: 170,
     hp: 100,
     maxHp: 100,
     hpRegen: 0,
-    damage: 5,
-    atkSpeed: 1, // tiros por segundo
+    damage: 6,
+    atkSpeed: 1.2,
     goldPerWave: 20,
     goldPerKill: 2
 };
 
-// Tabelas de Nível e Custos de Melhoria
 const upgrades = {
-    atkSpeed: { lvl: 1, cost: 15, scaleCost: 1.5 },
-    damage:   { lvl: 1, cost: 10, scaleCost: 1.4 },
-    hp:       { lvl: 1, cost: 20, scaleCost: 1.3 },
-    hpRegen:  { lvl: 0, cost: 25, scaleCost: 1.6 },
-    goldWave: { lvl: 1, cost: 30, scaleCost: 1.5 },
-    goldKill: { lvl: 1, cost: 40, scaleCost: 1.5 }
+    atkSpeed: { lvl: 1, cost: 15, scale: 1.4 },
+    damage:   { lvl: 1, cost: 10, scale: 1.3 },
+    hp:       { lvl: 1, cost: 20, scale: 1.3 },
+    hpRegen:  { lvl: 0, cost: 25, scale: 1.5 },
+    goldWave: { lvl: 1, cost: 30, scale: 1.4 },
+    goldKill: { lvl: 1, cost: 40, scale: 1.4 }
 };
 
 let bullets = [];
 let asteroids = [];
 
-// Entidade Asteroide
+// Classe Asteroide com Visual Rochoso
 class Asteroid {
     constructor(type = 'small') {
         const angle = Math.random() * Math.PI * 2;
-        const spawnDistance = Math.max(canvas.width, canvas.height) / 2 + 50;
+        const dist = Math.max(canvas.width, canvas.height) / 2 + 60;
         
-        this.x = canvas.width / 2 + Math.cos(angle) * spawnDistance;
-        this.y = canvas.height / 2 + Math.sin(angle) * spawnDistance;
+        this.x = canvas.width / 2 + Math.cos(angle) * dist;
+        this.y = canvas.height / 2 + Math.sin(angle) * dist;
         this.type = type;
 
-        // Configurações por tipo
         if (type === 'boss') {
-            this.radius = 35;
-            this.hp = 150 * (1 + game.wave * 0.5);
+            this.radius = 32;
+            this.hp = 160 * (1 + game.wave * 0.4);
             this.speed = 0.6;
             this.damagePerSec = 15;
-            this.goldValue = ship.goldPerKill * 10;
+            this.color = '#e74c3c';
         } else if (type === 'medium') {
             this.radius = 20;
-            this.hp = 25 * (1 + game.wave * 0.2);
+            this.hp = 28 * (1 + game.wave * 0.2);
             this.speed = 1.0;
             this.damagePerSec = 5;
-            this.goldValue = ship.goldPerKill * 2;
-        } else { // small
+            this.color = '#e67e22';
+        } else {
             this.radius = 12;
-            this.hp = 8 * (1 + game.wave * 0.15);
+            this.hp = 10 * (1 + game.wave * 0.15);
             this.speed = 1.5;
             this.damagePerSec = 2;
-            this.goldValue = ship.goldPerKill;
+            this.color = '#95a5a6';
         }
         
         this.maxHp = this.hp;
+
+        // Gerar formato irregular com vértices aleatórios
+        this.vertices = [];
+        const numVerts = 8;
+        for (let i = 0; i < numVerts; i++) {
+            const a = (i / numVerts) * Math.PI * 2;
+            const r = this.radius * (0.8 + Math.random() * 0.4);
+            this.vertices.push({ x: Math.cos(a) * r, y: Math.sin(a) * r });
+        }
     }
 
-    update(deltaTime) {
-        // Mover em direção à nave centro
+    update(dt) {
         const dx = (canvas.width / 2) - this.x;
         const dy = (canvas.height / 2) - this.y;
         const dist = Math.hypot(dx, dy);
 
-        if (dist > ship.radius) {
-            this.x += (dx / dist) * this.speed;
-            this.y += (dy / dist) * this.speed;
+        if (dist > ship.radius + 5) {
+            this.x += (dx / dist) * this.speed * gameSpeed;
+            this.y += (dy / dist) * this.speed * gameSpeed;
         } else {
-            // Colisão contínua com a nave
-            ship.hp -= this.damagePerSec * deltaTime;
+            ship.hp -= this.damagePerSec * dt * gameSpeed;
             if (ship.hp <= 0) {
                 ship.hp = 0;
                 endGame();
@@ -117,57 +136,108 @@ class Asteroid {
     }
 
     draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+
+        // Desenhar corpo irregular do asteroide
         ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-        ctx.fillStyle = this.type === 'boss' ? '#e74c3c' : (this.type === 'medium' ? '#e67e22' : '#95a5a6');
-        ctx.fill();
+        ctx.moveTo(this.vertices[0].x, this.vertices[0].y);
+        for (let i = 1; i < this.vertices.length; i++) {
+            ctx.lineTo(this.vertices[i].x, this.vertices[i].y);
+        }
         ctx.closePath();
+        ctx.fillStyle = this.color;
+        ctx.fill();
+        ctx.strokeStyle = '#2c3e50';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Barra de Vida
+        if (this.hp < this.maxHp) {
+            ctx.fillStyle = 'rgba(255,0,0,0.7)';
+            ctx.fillRect(-this.radius, -this.radius - 8, this.radius * 2, 4);
+            ctx.fillStyle = '#00e676';
+            ctx.fillRect(-this.radius, -this.radius - 8, (this.hp / this.maxHp) * (this.radius * 2), 4);
+        }
+
+        ctx.restore();
     }
 }
 
-// Entidade Projétil
+// Projéteis
 class Bullet {
     constructor(target) {
         this.x = canvas.width / 2;
         this.y = canvas.height / 2;
-        this.speed = 7;
+        this.speed = 8;
         this.damage = ship.damage;
-        this.target = target;
         
         const dx = target.x - this.x;
         const dy = target.y - this.y;
         const dist = Math.hypot(dx, dy);
         this.vx = (dx / dist) * this.speed;
         this.vy = (dy / dist) * this.speed;
+
+        game.shipAngle = Math.atan2(dy, dx);
     }
 
     update() {
-        this.x += this.vx;
-        this.y += this.vy;
+        this.x += this.vx * gameSpeed;
+        this.y += this.vy * gameSpeed;
     }
 
     draw() {
         ctx.beginPath();
-        ctx.arc(this.x, this.y, 4, 0, Math.PI * 2);
-        ctx.fillStyle = '#00e676';
+        ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
+        ctx.fillStyle = '#00f0ff';
+        ctx.shadowBlur = 6;
+        ctx.shadowColor = '#00f0ff';
         ctx.fill();
-        ctx.closePath();
+        ctx.shadowBlur = 0;
     }
 }
 
-// Sistema de Disparo Automático
+// Visual Detalhado da Nave Futurista
+function drawShip() {
+    ctx.save();
+    ctx.translate(ship.x, ship.y);
+    ctx.rotate(game.shipAngle);
+
+    // Propulsor / Fogo
+    ctx.beginPath();
+    ctx.moveTo(-15, -5);
+    ctx.lineTo(-22 - Math.random() * 5, 0);
+    ctx.lineTo(-15, 5);
+    ctx.fillStyle = '#ff5500';
+    ctx.fill();
+
+    // Asas
+    ctx.beginPath();
+    ctx.moveTo(-10, -16);
+    ctx.lineTo(15, 0);
+    ctx.lineTo(-10, 16);
+    ctx.lineTo(-5, 0);
+    ctx.fillStyle = '#00b4d8';
+    ctx.fill();
+
+    // Cabine
+    ctx.beginPath();
+    ctx.arc(2, 0, 5, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+
+    ctx.restore();
+}
+
+// Disparo Automático
 function autoShoot(now) {
-    if (now - game.lastShot < 1000 / ship.atkSpeed) return;
+    if (now - game.lastShot < 1000 / (ship.atkSpeed * gameSpeed)) return;
 
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
-
-    // Encontrar asteroide mais próximo dentro do Alcance de Ataque
     let nearest = null;
     let minDist = ship.attackRange;
 
     for (let ast of asteroids) {
-        const dist = Math.hypot(ast.x - centerX, ast.y - centerY);
+        const dist = Math.hypot(ast.x - ship.x, ast.y - ship.y);
         if (dist <= minDist) {
             minDist = dist;
             nearest = ast;
@@ -180,58 +250,51 @@ function autoShoot(now) {
     }
 }
 
-// Loop Principal do Jogo
+// Loop de Animação
 let lastTime = performance.now();
 function gameLoop(now) {
     if (game.gameOver) return;
 
-    const deltaTime = (now - lastTime) / 1000;
+    const dt = (now - lastTime) / 1000;
     lastTime = now;
 
-    // Recentralizar nave com base na janela
     ship.x = canvas.width / 2;
     ship.y = canvas.height / 2;
 
-    // Regeneração de HP
+    // Regen de HP
     if (ship.hp < ship.maxHp) {
-        ship.hp = Math.min(ship.maxHp, ship.hp + ship.hpRegen * deltaTime);
+        ship.hp = Math.min(ship.maxHp, ship.hp + ship.hpRegen * dt * gameSpeed);
     }
 
-    // Gerenciar Aparição (Spawn) de Ondas
     handleSpawning();
 
-    // Atualizar e Desenhar Tela
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Desenhar Circulo de Alcance
+    // Círculo de Alcance
     ctx.beginPath();
     ctx.arc(ship.x, ship.y, ship.attackRange, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(0, 180, 216, 0.2)';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(0, 180, 216, 0.15)';
+    ctx.setLineDash([6, 6]);
     ctx.stroke();
+    ctx.setLineDash([]);
 
-    // Desenhar Nave Principal
-    ctx.beginPath();
-    ctx.arc(ship.x, ship.y, ship.radius, 0, Math.PI * 2);
-    ctx.fillStyle = '#00b4d8';
-    ctx.fill();
+    // Desenhar Nave
+    drawShip();
 
-    // Barra de Vida da Nave
+    // Barra de Vida
     ctx.fillStyle = '#ff0055';
-    ctx.fillRect(ship.x - 25, ship.y + 25, 50, 6);
+    ctx.fillRect(ship.x - 20, ship.y + 24, 40, 5);
     ctx.fillStyle = '#00e676';
-    ctx.fillRect(ship.x - 25, ship.y + 25, (ship.hp / ship.maxHp) * 50, 6);
+    ctx.fillRect(ship.x - 20, ship.y + 24, (ship.hp / ship.maxHp) * 40, 5);
 
-    // Disparar
     autoShoot(now);
 
-    // Atualizar Projéteis
+    // Atualizar Tiros
     for (let i = bullets.length - 1; i >= 0; i--) {
         let b = bullets[i];
         b.update();
         b.draw();
 
-        // Checar colisão com Asteroides
         for (let j = asteroids.length - 1; j >= 0; j--) {
             let ast = asteroids[j];
             if (Math.hypot(b.x - ast.x, b.y - ast.y) < ast.radius) {
@@ -239,16 +302,15 @@ function gameLoop(now) {
                 bullets.splice(i, 1);
 
                 if (ast.hp <= 0) {
-                    game.gold += ast.goldValue;
+                    game.gold += ship.goldPerKill;
                     asteroids.splice(j, 1);
                     game.asteroidsDefeated++;
-                    checkWaveProgress();
+                    checkWave();
                 }
                 break;
             }
         }
 
-        // Remover projéteis fora de tela
         if (b && (b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height)) {
             bullets.splice(i, 1);
         }
@@ -256,7 +318,7 @@ function gameLoop(now) {
 
     // Atualizar Asteroides
     for (let ast of asteroids) {
-        ast.update(deltaTime);
+        ast.update(dt);
         ast.draw();
     }
 
@@ -264,17 +326,14 @@ function gameLoop(now) {
     requestAnimationFrame(gameLoop);
 }
 
-// Controle de Ondas
 function handleSpawning() {
-    if (game.asteroidsSpawned < game.asteroidsInWave && Math.random() < 0.02) {
+    if (game.asteroidsSpawned < game.asteroidsInWave && Math.random() < 0.03 * gameSpeed) {
         if (game.wave % 10 === 0) {
-            // Onda BOSS
             if (game.asteroidsSpawned === 0) {
                 asteroids.push(new Asteroid('boss'));
-                game.asteroidsSpawned = game.asteroidsInWave; // Apenas Boss na onda
+                game.asteroidsSpawned = game.asteroidsInWave;
             }
         } else {
-            // Ondas normais (mistura pequenos e médios)
             const type = Math.random() < 0.25 ? 'medium' : 'small';
             asteroids.push(new Asteroid(type));
             game.asteroidsSpawned++;
@@ -282,9 +341,8 @@ function handleSpawning() {
     }
 }
 
-function checkWaveProgress() {
+function checkWave() {
     if (game.asteroidsDefeated >= game.asteroidsInWave && asteroids.length === 0) {
-        // Onda Finalizada
         game.wave++;
         game.gold += ship.goldPerWave;
         game.asteroidsSpawned = 0;
@@ -293,16 +351,12 @@ function checkWaveProgress() {
     }
 }
 
-// Atualizar HUD e Botões
 function updateHUD() {
     document.getElementById('wave-num').innerText = game.wave;
     document.getElementById('gold-display').innerText = Math.floor(game.gold);
-    
-    // Status do Inimigo Básico da Onda
     document.getElementById('ast-hp').innerText = Math.floor(10 * (1 + game.wave * 0.15));
-    document.getElementById('ast-dmg').innerText = `${Math.floor(2 * (1 + game.wave * 0.1))}/s`;
+    document.getElementById('ast-dmg').innerText = Math.floor(2 * (1 + game.wave * 0.1));
 
-    // Atualizar estado de botões da loja
     for (let key in upgrades) {
         const u = upgrades[key];
         const btn = document.querySelector(`[onclick="buyUpgrade('${key}')"]`);
@@ -310,67 +364,50 @@ function updateHUD() {
     }
 }
 
-// Compra de Melhorias
 function buyUpgrade(type) {
     const u = upgrades[type];
     if (game.gold >= u.cost) {
         game.gold -= u.cost;
         u.lvl++;
 
-        // Aplicar Efeito
         switch(type) {
-            case 'atkSpeed': ship.atkSpeed += 0.2; break;
+            case 'atkSpeed': ship.atkSpeed += 0.25; break;
             case 'damage': ship.damage += 3; break;
-            case 'hp': 
-                ship.maxHp += 25; 
-                ship.hp += 25; 
-                break;
+            case 'hp': ship.maxHp += 20; ship.hp += 20; break;
             case 'hpRegen': ship.hpRegen += 0.5; break;
             case 'goldWave': ship.goldPerWave += 10; break;
             case 'goldKill': ship.goldPerKill += 1; break;
         }
 
-        // Recalcular Custo Próximo Nível
-        u.cost = Math.floor(u.cost * u.scaleCost);
-
-        // Atualizar textos da Interface
+        u.cost = Math.floor(u.cost * u.scale);
         document.getElementById(`lvl-${type}`).innerText = u.lvl;
         document.getElementById(`cost-${type}`).innerText = u.cost;
     }
 }
 
-// Fim de Jogo e Firebase Ranking
 function endGame() {
     game.gameOver = true;
-    const name = prompt("Fim de Jogo! Digite seu nome para o Ranking:") || "Anônimo";
-    
-    saveScore(name, game.wave);
-    document.getElementById('btn-restart').style.display = 'inline-block';
     document.getElementById('ranking-modal').style.display = 'flex';
-}
-
-function saveScore(name, waveReached) {
-    const scoresRef = db.ref('ranking_space_defense');
-    scoresRef.push({
-        name: name,
-        wave: waveReached,
-        date: new Date().toISOString()
-    });
-    loadRanking();
+    
+    if (typeof firebase !== 'undefined' && firebase.apps.length) {
+        const name = prompt("Fim de Jogo! Digite seu nome:") || "Anônimo";
+        firebase.database().ref('ranking_space_defense').push({
+            name: name,
+            wave: game.wave,
+            date: new Date().toISOString()
+        });
+        loadRanking();
+    }
 }
 
 function loadRanking() {
-    const scoresRef = db.ref('ranking_space_defense').orderByChild('wave').limitToLast(10);
-    scoresRef.once('value', (snapshot) => {
+    if (typeof firebase === 'undefined' || !firebase.apps.length) return;
+    firebase.database().ref('ranking_space_defense').orderByChild('wave').limitToLast(10)
+    .once('value', snapshot => {
         const listEl = document.getElementById('ranking-list');
         listEl.innerHTML = '';
-        
         let scores = [];
-        snapshot.forEach(child => {
-            scores.push(child.val());
-        });
-        
-        // Ordenar decrescente
+        snapshot.forEach(c => scores.push(c.val()));
         scores.reverse().forEach(data => {
             const li = document.createElement('li');
             li.innerText = `${data.name} - Onda ${data.wave}`;
@@ -383,5 +420,4 @@ function resetGame() {
     location.reload();
 }
 
-// Iniciar Loop
 requestAnimationFrame(gameLoop);
