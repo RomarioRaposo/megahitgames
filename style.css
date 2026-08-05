@@ -21,7 +21,7 @@
     --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
 }
 
-/* --- Reset Básico & Base --- */
+/* --- Base --- */
 * {
     box-sizing: border-box;
     margin: 0;
@@ -71,22 +71,28 @@ body {
 .container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 2rem 1rem;
+    padding: 2.5rem 1rem;
     flex: 1;
 }
 
 .hero {
     text-align: center;
-    margin-bottom: 3rem;
+    margin-bottom: 3.5rem;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .hero h2 {
-    font-size: 2rem;
-    margin-bottom: 0.5rem;
+    font-size: 2.25rem;
+    margin-bottom: 1rem;
+    font-weight: 700;
 }
 
-.hero p {
+.dedication {
     color: var(--text-secondary);
+    font-size: 1.1rem;
+    line-height: 1.6;
 }
 
 /* --- Grid de Jogos --- */
@@ -152,6 +158,13 @@ body {
     background-color: var(--accent-hover);
 }
 
+.play-btn.disabled {
+    background-color: var(--border-color);
+    color: var(--text-secondary);
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
 /* --- Footer --- */
 footer {
     text-align: center;
@@ -159,5 +172,15 @@ footer {
     background-color: var(--bg-surface);
     border-top: 1px solid var(--border-color);
     color: var(--text-secondary);
-    font-size: 0.875rem;
+    font-size: 0.9rem;
+}
+
+footer a {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+footer a:hover {
+    text-decoration: underline;
 }
