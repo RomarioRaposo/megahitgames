@@ -68,7 +68,6 @@ body {
     touch-action: none;
 }
 
-/* Overlays */
 .overlay {
     position: absolute;
     top: 0;
@@ -130,7 +129,6 @@ body {
     background: #334155;
 }
 
-/* Ranking */
 .nick-form {
     display: flex;
     flex-direction: column;
