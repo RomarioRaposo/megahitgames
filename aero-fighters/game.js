@@ -87,7 +87,7 @@ function handleTouchMove(e) {
     targetTouchX = touchX - player.width / 2;
 
     // Alvo Y: 45 pixels ACIMA da ponta do dedo para a nave não ficar escondida
-    const FINGER_OFFSET_Y = 45; 
+    const FINGER_OFFSET_Y = 90; 
     targetTouchY = touchY - player.height / 2 - FINGER_OFFSET_Y;
 
     isTouching = true;
