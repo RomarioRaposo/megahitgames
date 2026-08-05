@@ -1,41 +1,49 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Neon Flap - MegaHit Games</title>
-  <link rel="stylesheet" href="style.css">
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Neon Flap - MegaHit Games</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+    <!-- Firebase SDKs originais do projeto -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 </head>
 <body>
-  <div class="game-container">
-    <header class="hud">
-      <a href="../index.html" class="btn-back">← Voltar</a>
-      <div class="score-board">SCORE: <span id="score-val">0</span></div>
-    </header>
+    <div class="game-container">
+        <header class="hud">
+            <a href="../index.html" class="btn-back">← Voltar</a>
+            <div class="score-board">SCORE: <span id="score-val">0</span></div>
+        </header>
 
-    <div class="canvas-wrapper">
-      <canvas id="gameCanvas"></canvas>
-      
-      <!-- Overlay de Game Over / Início -->
-      <div id="start-screen" class="overlay">
-        <h1>NEON FLAP</h1>
-        <p>Pressione ESPAÇO ou Toque para Voar</p>
-        <button id="start-btn" class="btn-action">JOGAR</button>
-      </div>
+        <div class="canvas-wrapper">
+            <canvas id="gameCanvas"></canvas>
 
-      <div id="game-over-screen" class="overlay hidden">
-        <h1>GAME OVER</h1>
-        <p>Pontuação: <span id="final-score">0</span></p>
-        <button id="restart-btn" class="btn-action">TENTAR NOVAMENTE</button>
-      </div>
+            <div id="start-screen" class="overlay">
+                <h1>NEON FLAP</h1>
+                <p>Pressione ESPAÇO ou toque na tela para Voar</p>
+                <button id="start-btn" class="btn-action">JOGAR</button>
+            </div>
+
+            <div id="game-over-screen" class="overlay hidden">
+                <h1>GAME OVER</h1>
+                <p>Pontuação: <span id="final-score">0</span></p>
+                
+                <div class="leaderboard-section">
+                    <h3>🏆 MELHORES PONTUAÇÕES</h3>
+                    <ul id="leaderboard-list"></ul>
+                </div>
+
+                <button id="restart-btn" class="btn-action">JOGAR NOVAMENTE</button>
+            </div>
+        </div>
+
+        <div class="mobile-controls">
+            <button id="flap-btn" class="touch-btn">FLAP 🚀</button>
+        </div>
     </div>
 
-    <div class="mobile-controls">
-      <button id="flap-btn" class="touch-btn">FLAP 🚀</button>
-    </div>
-  </div>
-
-  <script src="game.js"></script>
+    <script src="game.js"></script>
 </body>
 </html>
