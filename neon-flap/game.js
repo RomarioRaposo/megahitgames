@@ -1,7 +1,24 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getDatabase, ref, push, set, get, query, orderByChild, limitToLast } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+// Credenciais Reais do Firebase - MegaHit Games
+const firebaseConfig = {
+  apiKey: "AIzaSyCvhEL3kMRMYhPK55tcICbLsWFHd45WgB8",
+  authDomain: "megahit-games.firebaseapp.com",
+  databaseURL: "https://megahit-games-default-rtdb.firebaseio.com",
+  projectId: "megahit-games",
+  storageBucket: "megahit-games.firebasestorage.app",
+  messagingSenderId: "595034446210",
+  appId: "1:595034446210:web:01f430b992d529988cd79b"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// Elementos UI
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-// UI
 const scoreVal = document.getElementById('score-val');
 const bestVal = document.getElementById('best-val');
 const overlayStart = document.getElementById('overlay-start');
@@ -13,12 +30,7 @@ const leaderboardList = document.getElementById('leaderboard-list');
 const startBtn = document.getElementById('start-btn');
 const restartBtn = document.getElementById('restart-btn');
 
-// Credenciais JSONBin.io (Substitua com suas chaves)
-const JSONBIN_BIN_ID = "SEU_BIN_ID_NEONFLAP";
-const JSONBIN_API_KEY = "SUA_MASTER_KEY_AQUI";
-const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
-
-// Estado do Jogo
+// Estado
 let gameActive = false;
 let score = 0;
 let bestScore = localStorage.getItem('megahit_neonflap_best') || 0;
@@ -27,24 +39,24 @@ bestVal.textContent = bestScore;
 let lastTime = 0;
 let dt = 0;
 
-// Física da Nave Neon
+// Nave Neon
 const bird = {
     x: 80,
     y: canvas.height / 2,
     radius: 14,
     velocity: 0,
-    gravity: 1200,   // Força da gravidade por segundo
-    jumpForce: -380, // Impulso do pulo
+    gravity: 1200,
+    jumpForce: -380,
     rotation: 0
 };
 
 let obstacles = [];
 let particles = [];
 let spawnTimer = 0;
-const spawnInterval = 1.6; // Segundos entre cada obstáculo
-const gapSize = 140;        // Abertura entre os tubos neon
+const spawnInterval = 1.6;
+const gapSize = 140;
 
-// Controles
+// Controles (Desktop / Touch)
 window.addEventListener('keydown', e => {
     if (e.code === 'Space' || e.key === ' ') {
         e.preventDefault();
@@ -65,7 +77,6 @@ function jump() {
     if (!gameActive) return;
     bird.velocity = bird.jumpForce;
 
-    // Partículas de impulso
     for (let i = 0; i < 8; i++) {
         particles.push({
             x: bird.x - 10,
@@ -113,10 +124,12 @@ function gameOver() {
     finalScoreEl.textContent = score;
     overlayGameOver.style.display = 'flex';
     document.getElementById('nick-form').style.display = 'flex';
+    saveScoreBtn.disabled = false;
+    saveScoreBtn.textContent = 'SALVAR NO RANKING';
+
     renderLeaderboard();
 }
 
-// Loop Principal
 function gameLoop(now) {
     if (!gameActive) return;
 
@@ -142,8 +155,6 @@ function gameLoop(now) {
 function updateBird() {
     bird.velocity += bird.gravity * dt;
     bird.y += bird.velocity * dt;
-
-    // Rotação suave da nave baseada na velocidade vertical
     bird.rotation = Math.min(Math.PI / 4, Math.max(-Math.PI / 4, bird.velocity * 0.002));
 }
 
@@ -167,9 +178,8 @@ function updateObstacles() {
     }
 
     obstacles.forEach((obs, i) => {
-        obs.x -= 160 * dt; // Velocidade de rolamento da tela
+        obs.x -= 160 * dt;
 
-        // Incrementa ponto ao passar o obstáculo
         if (!obs.passed && obs.x + obs.width < bird.x) {
             obs.passed = true;
             score++;
@@ -190,13 +200,11 @@ function updateParticles() {
 }
 
 function checkCollisions() {
-    // Colisão com teto ou chão
     if (bird.y - bird.radius < 0 || bird.y + bird.radius > canvas.height) {
         gameOver();
         return;
     }
 
-    // Colisão com tubos
     obstacles.forEach(obs => {
         if (bird.x + bird.radius > obs.x && bird.x - bird.radius < obs.x + obs.width) {
             if (bird.y - bird.radius < obs.topHeight || bird.y + bird.radius > obs.bottomY) {
@@ -206,12 +214,10 @@ function checkCollisions() {
     });
 }
 
-// Renderização
 function drawBackground() {
     ctx.fillStyle = '#020617';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Linhas de Grade Cyberpunk no Fundo
     ctx.strokeStyle = 'rgba(56, 189, 248, 0.05)';
     ctx.lineWidth = 1;
     for (let x = 0; x < canvas.width; x += 40) {
@@ -227,11 +233,9 @@ function drawBird() {
     ctx.translate(bird.x, bird.y);
     ctx.rotate(bird.rotation);
 
-    // Brilho Neon Rosa
     ctx.shadowColor = '#ec4899';
     ctx.shadowBlur = 12;
 
-    // Corpo da Nave Triangular
     ctx.fillStyle = '#ec4899';
     ctx.beginPath();
     ctx.moveTo(16, 0);
@@ -241,7 +245,6 @@ function drawBird() {
     ctx.closePath();
     ctx.fill();
 
-    // Núcleo Ciano
     ctx.fillStyle = '#38bdf8';
     ctx.beginPath();
     ctx.arc(0, 0, 4, 0, Math.PI * 2);
@@ -259,11 +262,9 @@ function drawObstacles() {
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 2;
 
-        // Obstáculo Superior
         ctx.fillRect(obs.x, 0, obs.width, obs.topHeight);
         ctx.strokeRect(obs.x, 0, obs.width, obs.topHeight);
 
-        // Obstáculo Inferior
         const bottomHeight = canvas.height - obs.bottomY;
         ctx.fillRect(obs.x, obs.bottomY, obs.width, bottomHeight);
         ctx.strokeRect(obs.x, obs.bottomY, obs.width, bottomHeight);
@@ -279,50 +280,58 @@ function drawParticles() {
     });
 }
 
-// Ranking API (JSONBin)
-async function renderLeaderboard() {
-    leaderboardList.innerHTML = '<li>Carregando...</li>';
-    try {
-        const res = await fetch(`${JSONBIN_URL}/latest`, { headers: { 'X-Master-Key': JSONBIN_API_KEY } });
-        if (!res.ok) throw new Error();
-        const data = await res.json();
-        const ranks = data.record || [];
+// ==========================================
+// RANKING GLOBAL - FIREBASE REALTIME DATABASE
+// ==========================================
 
-        leaderboardList.innerHTML = ranks.length === 0 ? '<li>Sem registros.</li>' : '';
-        ranks.forEach((item, index) => {
-            const li = document.createElement('li');
-            li.innerHTML = `<strong>#${index + 1} ${item.nick}</strong>: ${item.score} pts`;
-            leaderboardList.appendChild(li);
-        });
-    } catch {
-        leaderboardList.innerHTML = '<li>Ranking local ativo.</li>';
+async function renderLeaderboard() {
+    leaderboardList.innerHTML = '<li>Carregando ranking...</li>';
+
+    try {
+        const scoresRef = ref(db, 'rankings/neonflap');
+        const topScoresQuery = query(scoresRef, orderByChild('score'), limitToLast(10));
+        const snapshot = await get(topScoresQuery);
+
+        if (snapshot.exists()) {
+            const data = snapshot.val();
+            const list = Object.values(data).sort((a, b) => b.score - a.score);
+
+            leaderboardList.innerHTML = '';
+            list.forEach((item, index) => {
+                const li = document.createElement('li');
+                li.innerHTML = `<strong>#${index + 1} ${item.nick}</strong>: ${item.score} pts`;
+                leaderboardList.appendChild(li);
+            });
+        } else {
+            leaderboardList.innerHTML = '<li>Seja o primeiro a pontuar!</li>';
+        }
+    } catch (err) {
+        console.error("Erro ao carregar ranking:", err);
+        leaderboardList.innerHTML = '<li>Erro ao carregar ranking.</li>';
     }
 }
 
 async function saveRankingScore() {
     const nick = playerNickInput.value.trim() || 'Piloto Neon';
     saveScoreBtn.disabled = true;
+    saveScoreBtn.textContent = 'SALVANDO...';
 
     try {
-        const res = await fetch(`${JSONBIN_URL}/latest`, { headers: { 'X-Master-Key': JSONBIN_API_KEY } });
-        const data = await res.json();
-        let ranks = data.record || [];
+        const scoresRef = ref(db, 'rankings/neonflap');
+        const newScoreRef = push(scoresRef);
 
-        ranks.push({ nick, score });
-        ranks.sort((a, b) => b.score - a.score);
-        ranks = ranks.slice(0, 10);
-
-        await fetch(JSONBIN_URL, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_API_KEY },
-            body: JSON.stringify(ranks)
+        await set(newScoreRef, {
+            nick: nick,
+            score: score,
+            timestamp: Date.now()
         });
 
         document.getElementById('nick-form').style.display = 'none';
         renderLeaderboard();
-    } catch {
-        alert("Pontuação registrada localmente!");
-    } finally {
+    } catch (err) {
+        console.error("Erro ao salvar:", err);
+        alert("Não foi possível salvar a pontuação online.");
         saveScoreBtn.disabled = false;
+        saveScoreBtn.textContent = 'TENTAR NOVAMENTE';
     }
 }
