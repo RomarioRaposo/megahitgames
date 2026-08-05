@@ -14,14 +14,18 @@ const leaderboardList = document.getElementById('leaderboard-list');
 const startBtn = document.getElementById('start-btn');
 const restartBtn = document.getElementById('restart-btn');
 
-// Estado de Execução
+// Estado Geral
 let gameActive = false;
 let score = 0;
 let lives = 3;
+let currentStage = 1;
+const TOTAL_STAGES = 10;
+let stageKills = 0;
+let killsToBoss = 15; // Inimigos necessários para chamar o Boss da fase
+let stageBannerTimer = 0;
+
 let lastTime = 0;
 let shotTimer = 0;
-
-// Delta Time (Normalizador de FPS)
 let dt = 0;
 
 // Controles
@@ -30,8 +34,22 @@ let isTouching = false;
 let targetTouchX = null;
 let targetTouchY = null;
 
+// Paleta de Cores de Fundo por Fase
+const STAGE_THEMES = [
+    { bg: '#020617', star: '#ffffff' }, // Fase 1: Espaço Noturno
+    { bg: '#0f172a', star: '#38bdf8' }, // Fase 2: Nebulosa Azul
+    { bg: '#1e1b4b', star: '#a855f7' }, // Fase 3: Galáxia Roxa
+    { bg: '#31121f', star: '#f43f5e' }, // Fase 4: Órbita Carmim
+    { bg: '#064e3b', star: '#34d399' }, // Fase 5: Setor Esmeralda
+    { bg: '#172554', star: '#60a5fa' }, // Fase 6: Cinturão Ciano
+    { bg: '#451a03', star: '#fbbf24' }, // Fase 7: Tempestade Âmbar
+    { bg: '#2e1065', star: '#c084fc' }, // Fase 8: Vazio Violeta
+    { bg: '#111827', star: '#9ca3af' }, // Fase 9: Campo Sombrio
+    { bg: '#4c0519', star: '#fda4af' }  // Fase 10: Núcleo Infernal
+];
+
 // Fundo Estrelado
-const stars = Array.from({ length: 60 }, () => ({
+const stars = Array.from({ length: 70 }, () => ({
     x: Math.random() * canvas.width,
     y: Math.random() * canvas.height,
     size: Math.random() * 2 + 0.5,
@@ -44,8 +62,8 @@ const player = {
     y: canvas.height - 90,
     width: 32,
     height: 38,
-    speed: 320,
-    weaponLevel: 1, // 1 a 4
+    speed: 340,
+    weaponLevel: 1,
     hasShield: false
 };
 
@@ -57,7 +75,7 @@ let particles = [];
 let powerUps = [];
 let boss = null;
 
-// Listeners
+// Eventos
 window.addEventListener('keydown', e => handleKey(e, true));
 window.addEventListener('keyup', e => handleKey(e, false));
 
@@ -79,15 +97,11 @@ function handleTouchMove(e) {
     const rect = canvas.getBoundingClientRect();
     const touch = e.touches[0];
 
-    // Converte as coordenadas do toque para a escala do Canvas
     const touchX = (touch.clientX - rect.left) * (canvas.width / rect.width);
     const touchY = (touch.clientY - rect.top) * (canvas.height / rect.height);
 
-    // Alvo X: Centralizado horizontalmente no dedo
     targetTouchX = touchX - player.width / 2;
-
-    // Alvo Y: 45 pixels ACIMA da ponta do dedo para a nave não ficar escondida
-    const FINGER_OFFSET_Y = 90; 
+    const FINGER_OFFSET_Y = 90; // Offset ajustado
     targetTouchY = touchY - player.height / 2 - FINGER_OFFSET_Y;
 
     isTouching = true;
@@ -100,13 +114,18 @@ saveScoreBtn.addEventListener('click', saveRankingScore);
 function startGame() {
     score = 0;
     lives = 3;
+    currentStage = 1;
+    stageKills = 0;
+    killsToBoss = 12;
+    stageBannerTimer = 2.5;
+
     bullets = [];
     enemyBullets = [];
     enemies = [];
     particles = [];
     powerUps = [];
     boss = null;
-    
+
     player.x = canvas.width / 2 - 16;
     player.y = canvas.height - 90;
     player.weaponLevel = 1;
@@ -122,9 +141,23 @@ function startGame() {
     requestAnimationFrame(gameLoop);
 }
 
+function nextStage() {
+    if (currentStage >= TOTAL_STAGES) {
+        gameOver(true); // Venceu o jogo completo!
+        return;
+    }
+
+    currentStage++;
+    stageKills = 0;
+    killsToBoss = 12 + currentStage * 3;
+    stageBannerTimer = 2.5; // Exibe alerta de nova fase por 2.5s
+    enemies = [];
+    enemyBullets = [];
+}
+
 function gameOver(won = false) {
     gameActive = false;
-    gameoverTitle.textContent = won ? "VITÓRIA!" : "GAME OVER";
+    gameoverTitle.textContent = won ? "ZEROU O JOGO!" : "GAME OVER";
     gameoverTitle.style.color = won ? "#10b981" : "#ef4444";
     finalScoreEl.textContent = score;
 
@@ -158,13 +191,15 @@ function renderLeaderboard() {
     });
 }
 
-// LOOP PRINCIPAL (Com Delta Time)
+// Loop Principal
 function gameLoop(now) {
     if (!gameActive) return;
 
-    dt = (now - lastTime) / 1000; // Converte para segundos
-    if (dt > 0.1) dt = 0.1; // Trava para evitar grandes saltos de lag
+    dt = (now - lastTime) / 1000;
+    if (dt > 0.1) dt = 0.1;
     lastTime = now;
+
+    if (stageBannerTimer > 0) stageBannerTimer -= dt;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -185,14 +220,14 @@ function gameLoop(now) {
     drawBoss();
     drawPowerUps();
     drawParticles();
+    drawHUDOverlay();
 
     requestAnimationFrame(gameLoop);
 }
 
-// ATUALIZAÇÕES COM FÍSICA INDEPENDENTE DE FPS
 function updateBackground() {
     stars.forEach(s => {
-        s.y += s.speed * dt;
+        s.y += (s.speed + currentStage * 10) * dt;
         if (s.y > canvas.height) s.y = 0;
     });
 }
@@ -211,9 +246,8 @@ function updatePlayer() {
     player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
     player.y = Math.max(0, Math.min(canvas.height - player.height, player.y));
 
-    // Tiro Automático Adaptativo por Nível de Upgrade
     shotTimer += dt;
-    const fireInterval = player.weaponLevel === 4 ? 0.09 : 0.13;
+    const fireInterval = player.weaponLevel === 4 ? 0.08 : 0.12;
 
     if (shotTimer >= fireInterval) {
         fireWeapon();
@@ -237,7 +271,7 @@ function fireWeapon() {
         bullets.push({ x: pX - 4, y: pY, vx: -40, vy: -600, w: 5, h: 14, color: '#f59e0b' });
         bullets.push({ x: pX + 4, y: pY, vx: 40, vy: -600, w: 5, h: 14, color: '#f59e0b' });
         bullets.push({ x: pX + 12, y: pY, vx: 120, vy: -560, w: 5, h: 14, color: '#f59e0b' });
-    } else { // Nível 4 (Plasma)
+    } else {
         bullets.push({ x: pX - 16, y: pY, vx: -160, vy: -620, w: 6, h: 16, color: '#a855f7' });
         bullets.push({ x: pX - 6, y: pY, vx: 0, vy: -650, w: 8, h: 18, color: '#ec4899' });
         bullets.push({ x: pX + 2, y: pY, vx: 0, vy: -650, w: 8, h: 18, color: '#ec4899' });
@@ -260,26 +294,27 @@ function updateBullets() {
 }
 
 function spawnEnemies() {
-    if (!boss && Math.random() < 0.03) {
+    if (!boss && stageKills < killsToBoss && Math.random() < 0.02 + currentStage * 0.005) {
         enemies.push({
             x: Math.random() * (canvas.width - 32),
             y: -40,
             width: 32,
             height: 32,
-            speed: Math.random() * 80 + 100,
-            hp: 3
+            speed: Math.random() * 60 + (80 + currentStage * 15),
+            hp: 2 + Math.floor(currentStage / 2)
         });
     }
 
-    if (score >= 1200 && !boss) {
+    // Invocação do Boss ao atingir meta de abates da fase
+    if (stageKills >= killsToBoss && !boss) {
         boss = {
             x: canvas.width / 2 - 60,
             y: -100,
-            width: 120,
-            height: 70,
-            hp: 120,
-            maxHp: 120,
-            dx: 120
+            width: 120 + currentStage * 4,
+            height: 70 + currentStage * 2,
+            hp: 80 + currentStage * 40,
+            maxHp: 80 + currentStage * 40,
+            dx: 100 + currentStage * 15
         };
     }
 }
@@ -287,8 +322,8 @@ function spawnEnemies() {
 function updateEnemies() {
     enemies.forEach((e, i) => {
         e.y += e.speed * dt;
-        if (Math.random() < 0.01) {
-            enemyBullets.push({ x: e.x + e.width / 2, y: e.y + e.height, vx: 0, vy: 220 });
+        if (Math.random() < 0.008 + currentStage * 0.003) {
+            enemyBullets.push({ x: e.x + e.width / 2, y: e.y + e.height, vx: 0, vy: 200 + currentStage * 20 });
         }
         if (e.y > canvas.height + 40) enemies.splice(i, 1);
     });
@@ -302,23 +337,24 @@ function updateBoss() {
         boss.x += boss.dx * dt;
         if (boss.x <= 0 || boss.x >= canvas.width - boss.width) boss.dx *= -1;
 
-        if (Math.random() < 0.04) {
-            for (let angle = -0.6; angle <= 0.6; angle += 0.3) {
+        if (Math.random() < 0.03 + currentStage * 0.005) {
+            const spread = 0.3 + currentStage * 0.05;
+            for (let angle = -spread; angle <= spread; angle += 0.2) {
                 enemyBullets.push({
                     x: boss.x + boss.width / 2,
                     y: boss.y + boss.height,
                     vx: angle * 180,
-                    vy: 200
+                    vy: 190 + currentStage * 15
                 });
             }
         }
     }
 }
 
-// Power-Ups (Upgrades em Queda)
+// Power-Ups (Incluindo Vida 'H')
 function spawnPowerUp(x, y) {
-    if (Math.random() < 0.25) { // 25% de chance
-        const types = ['P', 'P', 'S', 'B']; // P maior probabilidade
+    if (Math.random() < 0.3) {
+        const types = ['P', 'P', 'S', 'B', 'H']; // H = Heal
         const type = types[Math.floor(Math.random() * types.length)];
         powerUps.push({ x, y, type, speed: 90 });
     }
@@ -328,13 +364,18 @@ function updatePowerUps() {
     powerUps.forEach((p, i) => {
         p.y += p.speed * dt;
 
-        // Coleta do Power-Up
         if (p.x < player.x + player.width && p.x + 20 > player.x &&
             p.y < player.y + player.height && p.y + 20 > player.y) {
-            
+
             if (p.type === 'P' && player.weaponLevel < 4) player.weaponLevel++;
             if (p.type === 'S') player.hasShield = true;
-            if (p.type === 'B') { // Bomb: Limpa a tela
+            if (p.type === 'H') {
+                if (lives < 5) {
+                    lives++;
+                    livesVal.textContent = lives;
+                }
+            }
+            if (p.type === 'B') {
                 enemies.forEach(e => createExplosion(e.x + e.width / 2, e.y + e.height / 2, '#10b981'));
                 enemies = [];
                 enemyBullets = [];
@@ -382,6 +423,7 @@ function checkCollisions() {
                     createExplosion(e.x + e.width / 2, e.y + e.height / 2, '#10b981');
                     spawnPowerUp(e.x + e.width / 2, e.y + e.height / 2);
                     enemies.splice(ei, 1);
+                    stageKills++;
                     score += 50;
                     scoreVal.textContent = score;
                 }
@@ -394,10 +436,10 @@ function checkCollisions() {
             createExplosion(b.x, b.y, '#3b82f6');
             if (boss.hp <= 0) {
                 createExplosion(boss.x + boss.width / 2, boss.y + boss.height / 2, '#ef4444');
-                score += 500;
+                score += 500 * currentStage;
                 scoreVal.textContent = score;
                 boss = null;
-                setTimeout(() => gameOver(true), 800);
+                setTimeout(() => nextStage(), 1000);
             }
         }
     });
@@ -426,20 +468,23 @@ function hitPlayer() {
 
     lives--;
     livesVal.textContent = lives;
-    if (player.weaponLevel > 1) player.weaponLevel--; // Reduz nível de arma ao tomar dano
+    if (player.weaponLevel > 1) player.weaponLevel--;
     createExplosion(player.x + player.width / 2, player.y + player.height / 2, '#ef4444');
-    
+
     if (lives <= 0) gameOver(false);
 }
 
-// RENDERIZAÇÃO
+// Renderização Dinâmica
 function drawBackground() {
-    ctx.fillStyle = '#ffffff';
+    const theme = STAGE_THEMES[(currentStage - 1) % STAGE_THEMES.length];
+    ctx.fillStyle = theme.bg;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = theme.star;
     stars.forEach(s => ctx.fillRect(s.x, s.y, s.size, s.size));
 }
 
 function drawPlayer() {
-    // Escudo Energético (Se Ativo)
     if (player.hasShield) {
         ctx.strokeStyle = '#38bdf8';
         ctx.lineWidth = 2;
@@ -448,7 +493,6 @@ function drawPlayer() {
         ctx.stroke();
     }
 
-    // Nave Delta
     ctx.fillStyle = '#2563eb';
     ctx.beginPath();
     ctx.moveTo(player.x + player.width / 2, player.y);
@@ -458,11 +502,9 @@ function drawPlayer() {
     ctx.closePath();
     ctx.fill();
 
-    // Cockpit
     ctx.fillStyle = '#38bdf8';
     ctx.fillRect(player.x + player.width / 2 - 3, player.y + 10, 6, 12);
 
-    // Propulsor
     ctx.fillStyle = '#f59e0b';
     ctx.fillRect(player.x + player.width / 2 - 4, player.y + player.height - 2, 8, 8 + Math.random() * 4);
 }
@@ -502,7 +544,7 @@ function drawBoss() {
 
 function drawPowerUps() {
     powerUps.forEach(p => {
-        ctx.fillStyle = p.type === 'P' ? '#3b82f6' : (p.type === 'S' ? '#38bdf8' : '#ef4444');
+        ctx.fillStyle = p.type === 'P' ? '#3b82f6' : (p.type === 'S' ? '#38bdf8' : (p.type === 'H' ? '#10b981' : '#ef4444'));
         ctx.fillRect(p.x - 10, p.y - 10, 20, 20);
 
         ctx.fillStyle = '#ffffff';
@@ -518,4 +560,17 @@ function drawParticles() {
         ctx.fillStyle = p.color;
         ctx.fillRect(p.x, p.y, p.size, p.size);
     });
+}
+
+function drawHUDOverlay() {
+    // Alerta de Mudança de Fase
+    if (stageBannerTimer > 0) {
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.7)';
+        ctx.fillRect(0, canvas.height / 2 - 40, canvas.width, 80);
+
+        ctx.fillStyle = '#f59e0b';
+        ctx.font = 'bold 24px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`FASE ${currentStage} DE ${TOTAL_STAGES}`, canvas.width / 2, canvas.height / 2 + 8);
+    }
 }
