@@ -14,71 +14,36 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 
     <style>
-        * {
-            user-select: none;
-            -webkit-user-select: none;
-            touch-action: manipulation;
-        }
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #0b0f19;
-            color: #f8fafc;
-        }
-        canvas {
-            display: block;
-            width: 100%;
-            height: 100%;
-        }
-        .hud-glass {
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        .btn-upgrade {
-            background: linear-gradient(135deg, #1e293b, #0f172a);
-            border: 1px solid #334155;
-            transition: all 0.15s ease;
-        }
-        .btn-upgrade:hover:not(:disabled) {
-            border-color: #3b82f6;
-            transform: translateY(-2px);
-            background: linear-gradient(135deg, #2563eb, #1d4ed8);
-        }
-        .btn-upgrade:active:not(:disabled) {
-            transform: translateY(0);
-        }
-        .btn-upgrade:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-            border-color: #1e293b;
-        }
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #334155;
-            border-radius: 4px;
-        }
+        * { user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0b0f19; color: #f8fafc; }
+        canvas { display: block; width: 100%; height: 100%; }
+        .hud-glass { background: rgba(15, 23, 42, 0.88); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .btn-upgrade { background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid #334155; transition: all 0.15s ease; }
+        .btn-upgrade:hover:not(:disabled) { border-color: #3b82f6; transform: translateY(-1px); background: linear-gradient(135deg, #2563eb, #1d4ed8); }
+        .btn-upgrade:active:not(:disabled) { transform: translateY(0); }
+        .btn-upgrade:disabled { opacity: 0.4; cursor: not-allowed; border-color: #1e293b; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
     </style>
 </head>
 <body class="h-screen w-screen flex flex-col overflow-hidden select-none">
 
     <!-- HUD SUPERIOR -->
-    <header class="hud-glass px-4 py-2 flex items-center justify-between text-xs sm:text-sm z-10 shadow-lg">
-        <div class="flex items-center gap-3">
-            <a href="../../index.html" class="flex items-center gap-1 font-bold text-blue-400 hover:text-blue-300 transition">
+    <header class="hud-glass px-3 py-1.5 sm:px-4 sm:py-2 flex items-center justify-between text-xs sm:text-sm z-10 shadow-lg">
+        <div class="flex items-center gap-2 sm:gap-3">
+            <a href="../../index.html" class="flex items-center gap-1 font-bold text-blue-400 hover:text-blue-300 transition text-xs sm:text-sm">
                 <span>◀</span> <span class="hidden sm:inline">Hub</span>
             </a>
-            <div class="h-4 w-[1px] bg-slate-700"></div>
-            <div class="bg-blue-950/80 border border-blue-500/30 px-3 py-1 rounded-full text-blue-300 font-bold">
-                Onda <span id="hud-wave" class="text-white text-base">1</span>
+            <div class="h-3 w-[1px] bg-slate-700"></div>
+            <div class="bg-blue-950/80 border border-blue-500/30 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-blue-300 font-bold text-xs">
+                Onda <span id="hud-wave" class="text-white text-sm sm:text-base">1</span>
             </div>
         </div>
 
         <!-- STATUS INIMIGOS -->
         <div class="hidden md:flex items-center gap-4 text-slate-300">
             <div class="flex items-center gap-1">
-                <span class="text-slate-400">Inimigo HP:</span>
+                <span class="text-slate-400">HP Inimigo:</span>
                 <span id="hud-ast-hp" class="font-bold text-red-400">10</span>
             </div>
             <div class="flex items-center gap-1">
@@ -87,19 +52,19 @@
             </div>
         </div>
 
-        <div class="flex items-center gap-2 sm:gap-3">
+        <div class="flex items-center gap-2">
             <!-- BOTÃO VELOCIDADE (1x - 4x) -->
-            <button id="btn-speed" onclick="toggleSpeed()" class="bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-300 font-bold px-2.5 py-1 rounded-full transition text-xs flex items-center gap-1">
+            <button id="btn-speed" onclick="toggleSpeed()" class="bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-300 font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full transition text-[11px] sm:text-xs flex items-center gap-1">
                 ⚡ <span id="speed-label">1x</span>
             </button>
 
             <!-- OURO -->
-            <div class="bg-amber-950/60 border border-amber-500/30 px-3 py-1 rounded-full text-amber-300 font-bold flex items-center gap-1">
-                <span>🪙</span> <span id="hud-gold" class="text-amber-400 text-base">0</span>
+            <div class="bg-amber-950/60 border border-amber-500/30 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-amber-300 font-bold flex items-center gap-1 text-xs">
+                <span>🪙</span> <span id="hud-gold" class="text-amber-400 text-xs sm:text-base">0</span>
             </div>
 
             <!-- RANKING -->
-            <button onclick="toggleRankingModal(true)" class="bg-slate-800 hover:bg-slate-700 border border-slate-600 px-3 py-1 rounded-full text-xs font-semibold text-slate-200 transition">
+            <button onclick="toggleRankingModal(true)" class="bg-slate-800 hover:bg-slate-700 border border-slate-600 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[11px] sm:text-xs font-semibold text-slate-200 transition">
                 🏆 Rank
             </button>
         </div>
@@ -110,76 +75,111 @@
         <canvas id="gameCanvas"></canvas>
 
         <!-- STATUS FLUTUANTE DA NAVE (HP) -->
-        <div class="absolute top-3 left-1/2 -translate-x-1/2 hud-glass px-4 py-1.5 rounded-full flex items-center gap-3 text-xs shadow-md border border-slate-700/50 pointer-events-none">
+        <div class="absolute top-2 left-1/2 -translate-x-1/2 hud-glass px-3 py-1 rounded-full flex items-center gap-2 sm:gap-3 text-[11px] sm:text-xs shadow-md border border-slate-700/50 pointer-events-none">
             <div class="flex items-center gap-1">
-                <span class="text-emerald-400 font-bold">HP Nave:</span>
+                <span class="text-emerald-400 font-bold">HP:</span>
                 <span id="hud-ship-hp" class="font-extrabold text-white">100/100</span>
             </div>
-            <div class="w-20 bg-slate-800 h-2 rounded-full overflow-hidden border border-slate-700">
+            <div class="w-16 sm:w-20 bg-slate-800 h-1.5 sm:h-2 rounded-full overflow-hidden border border-slate-700">
                 <div id="hud-hp-bar" class="bg-emerald-500 h-full w-full transition-all duration-150"></div>
             </div>
-            <span id="hud-ship-regen" class="text-emerald-400/80 font-semibold text-[10px]">+0/s</span>
+            <span id="hud-ship-regen" class="text-emerald-400/80 font-semibold text-[9px] sm:text-[10px]">+0/s</span>
         </div>
     </main>
 
-    <!-- HUD INFERIOR: LOJA -->
-    <footer class="hud-glass p-2 sm:p-3 z-10 border-t border-slate-800">
-        <div class="max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
-            <button id="btn-upgrade-atkSpeed" onclick="buyUpgrade('atkSpeed')" class="btn-upgrade p-2 rounded-xl text-left flex flex-col justify-between">
+    <!-- HUD INFERIOR: LOJA (COMPACTA NO MOBILE) -->
+    <footer class="hud-glass p-1.5 sm:p-2.5 z-10 border-t border-slate-800">
+        <div class="max-w-4xl mx-auto grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-6 gap-1.5 sm:gap-2">
+            <button id="btn-upgrade-atkSpeed" onclick="buyUpgrade('atkSpeed')" class="btn-upgrade p-1.5 sm:p-2 rounded-lg sm:rounded-xl text-left flex flex-col justify-between">
                 <div class="flex justify-between items-start">
-                    <span class="text-[11px] font-bold text-blue-300">⚡ Atk Speed</span>
-                    <span id="lvl-atkSpeed" class="text-[10px] bg-blue-900/60 text-blue-200 px-1.5 py-0.5 rounded font-mono">Nv 1</span>
+                    <span class="text-[10px] sm:text-[11px] font-bold text-blue-300">⚡ Atk Spd</span>
+                    <span id="lvl-atkSpeed" class="text-[9px] sm:text-[10px] bg-blue-900/60 text-blue-200 px-1 py-0.2 sm:px-1.5 sm:py-0.5 rounded font-mono">Nv 1</span>
                 </div>
-                <div class="text-[10px] text-slate-400 mt-1">Disparos/seg</div>
-                <div class="mt-1 text-xs font-bold text-amber-400">🪙 <span id="cost-atkSpeed">15</span></div>
+                <div class="text-[9px] sm:text-[10px] text-slate-400 mt-0.5">Cadência</div>
+                <div class="mt-0.5 text-[10px] sm:text-xs font-bold text-amber-400">🪙 <span id="cost-atkSpeed">15</span></div>
             </button>
 
-            <button id="btn-upgrade-damage" onclick="buyUpgrade('damage')" class="btn-upgrade p-2 rounded-xl text-left flex flex-col justify-between">
+            <button id="btn-upgrade-damage" onclick="buyUpgrade('damage')" class="btn-upgrade p-1.5 sm:p-2 rounded-lg sm:rounded-xl text-left flex flex-col justify-between">
                 <div class="flex justify-between items-start">
-                    <span class="text-[11px] font-bold text-red-300">⚔️ Dano</span>
-                    <span id="lvl-damage" class="text-[10px] bg-red-900/60 text-red-200 px-1.5 py-0.5 rounded font-mono">Nv 1</span>
+                    <span class="text-[10px] sm:text-[11px] font-bold text-red-300">⚔️ Dano</span>
+                    <span id="lvl-damage" class="text-[9px] sm:text-[10px] bg-red-900/60 text-red-200 px-1 py-0.2 sm:px-1.5 sm:py-0.5 rounded font-mono">Nv 1</span>
                 </div>
-                <div class="text-[10px] text-slate-400 mt-1">Por projétil</div>
-                <div class="mt-1 text-xs font-bold text-amber-400">🪙 <span id="cost-damage">10</span></div>
+                <div class="text-[9px] sm:text-[10px] text-slate-400 mt-0.5">Por tiro</div>
+                <div class="mt-0.5 text-[10px] sm:text-xs font-bold text-amber-400">🪙 <span id="cost-damage">10</span></div>
             </button>
 
-            <button id="btn-upgrade-hp" onclick="buyUpgrade('hp')" class="btn-upgrade p-2 rounded-xl text-left flex flex-col justify-between">
+            <button id="btn-upgrade-hp" onclick="buyUpgrade('hp')" class="btn-upgrade p-1.5 sm:p-2 rounded-lg sm:rounded-xl text-left flex flex-col justify-between">
                 <div class="flex justify-between items-start">
-                    <span class="text-[11px] font-bold text-emerald-300">🛡️ HP Máximo</span>
-                    <span id="lvl-hp" class="text-[10px] bg-emerald-900/60 text-emerald-200 px-1.5 py-0.5 rounded font-mono">Nv 1</span>
+                    <span class="text-[10px] sm:text-[11px] font-bold text-emerald-300">🛡️ Max HP</span>
+                    <span id="lvl-hp" class="text-[9px] sm:text-[10px] bg-emerald-900/60 text-emerald-200 px-1 py-0.2 sm:px-1.5 sm:py-0.5 rounded font-mono">Nv 1</span>
                 </div>
-                <div class="text-[10px] text-slate-400 mt-1">Vida da Nave</div>
-                <div class="mt-1 text-xs font-bold text-amber-400">🪙 <span id="cost-hp">20</span></div>
+                <div class="text-[9px] sm:text-[10px] text-slate-400 mt-0.5">Vida Nave</div>
+                <div class="mt-0.5 text-[10px] sm:text-xs font-bold text-amber-400">🪙 <span id="cost-hp">20</span></div>
             </button>
 
-            <button id="btn-upgrade-hpRegen" onclick="buyUpgrade('hpRegen')" class="btn-upgrade p-2 rounded-xl text-left flex flex-col justify-between">
+            <button id="btn-upgrade-hpRegen" onclick="buyUpgrade('hpRegen')" class="btn-upgrade p-1.5 sm:p-2 rounded-lg sm:rounded-xl text-left flex flex-col justify-between">
                 <div class="flex justify-between items-start">
-                    <span class="text-[11px] font-bold text-teal-300">💖 HP Regen</span>
-                    <span id="lvl-hpRegen" class="text-[10px] bg-teal-900/60 text-teal-200 px-1.5 py-0.5 rounded font-mono">Nv 0</span>
+                    <span class="text-[10px] sm:text-[11px] font-bold text-teal-300">💖 Regen</span>
+                    <span id="lvl-hpRegen" class="text-[9px] sm:text-[10px] bg-teal-900/60 text-teal-200 px-1 py-0.2 sm:px-1.5 sm:py-0.5 rounded font-mono">Nv 0</span>
                 </div>
-                <div class="text-[10px] text-slate-400 mt-1">Cura por seg</div>
-                <div class="mt-1 text-xs font-bold text-amber-400">🪙 <span id="cost-hpRegen">25</span></div>
+                <div class="text-[9px] sm:text-[10px] text-slate-400 mt-0.5">Cura/seg</div>
+                <div class="mt-0.5 text-[10px] sm:text-xs font-bold text-amber-400">🪙 <span id="cost-hpRegen">25</span></div>
             </button>
 
-            <button id="btn-upgrade-goldWave" onclick="buyUpgrade('goldWave')" class="btn-upgrade p-2 rounded-xl text-left flex flex-col justify-between">
+            <button id="btn-upgrade-goldWave" onclick="buyUpgrade('goldWave')" class="btn-upgrade p-1.5 sm:p-2 rounded-lg sm:rounded-xl text-left flex flex-col justify-between">
                 <div class="flex justify-between items-start">
-                    <span class="text-[11px] font-bold text-amber-300">💰 Ouro/Onda</span>
-                    <span id="lvl-goldWave" class="text-[10px] bg-amber-900/60 text-amber-200 px-1.5 py-0.5 rounded font-mono">Nv 1</span>
+                    <span class="text-[10px] sm:text-[11px] font-bold text-amber-300">💰 +Onda</span>
+                    <span id="lvl-goldWave" class="text-[9px] sm:text-[10px] bg-amber-900/60 text-amber-200 px-1 py-0.2 sm:px-1.5 sm:py-0.5 rounded font-mono">Nv 1</span>
                 </div>
-                <div class="text-[10px] text-slate-400 mt-1">Bônus de Onda</div>
-                <div class="mt-1 text-xs font-bold text-amber-400">🪙 <span id="cost-goldWave">30</span></div>
+                <div class="text-[9px] sm:text-[10px] text-slate-400 mt-0.5">Bônus Onda</div>
+                <div class="mt-0.5 text-[10px] sm:text-xs font-bold text-amber-400">🪙 <span id="cost-goldWave">30</span></div>
             </button>
 
-            <button id="btn-upgrade-goldKill" onclick="buyUpgrade('goldKill')" class="btn-upgrade p-2 rounded-xl text-left flex flex-col justify-between">
+            <button id="btn-upgrade-goldKill" onclick="buyUpgrade('goldKill')" class="btn-upgrade p-1.5 sm:p-2 rounded-lg sm:rounded-xl text-left flex flex-col justify-between">
                 <div class="flex justify-between items-start">
-                    <span class="text-[11px] font-bold text-yellow-300">🎯 Ouro/Abate</span>
-                    <span id="lvl-goldKill" class="text-[10px] bg-yellow-900/60 text-yellow-200 px-1.5 py-0.5 rounded font-mono">Nv 1</span>
+                    <span class="text-[10px] sm:text-[11px] font-bold text-yellow-300">🎯 +Abate</span>
+                    <span id="lvl-goldKill" class="text-[9px] sm:text-[10px] bg-yellow-900/60 text-yellow-200 px-1 py-0.2 sm:px-1.5 sm:py-0.5 rounded font-mono">Nv 1</span>
                 </div>
-                <div class="text-[10px] text-slate-400 mt-1">Por Asteroide</div>
-                <div class="mt-1 text-xs font-bold text-amber-400">🪙 <span id="cost-goldKill">40</span></div>
+                <div class="text-[9px] sm:text-[10px] text-slate-400 mt-0.5">Por Abate</div>
+                <div class="mt-0.5 text-[10px] sm:text-xs font-bold text-amber-400">🪙 <span id="cost-goldKill">40</span></div>
             </button>
         </div>
     </footer>
+
+    <!-- MODAL RECOMPENSA DO CHEFE (POWER-UPS DE TIRO) -->
+    <div id="boss-reward-modal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-blue-500/40 rounded-2xl max-w-md w-full p-5 text-center shadow-2xl relative animate-bounce-short">
+            <div class="text-4xl mb-2">👑</div>
+            <h2 class="text-xl font-extrabold text-blue-400 mb-1">CHEFE DERROTADO!</h2>
+            <p class="text-xs text-slate-300 mb-4">Escolha uma Modificação de Armamento Especial para sua nave:</p>
+
+            <div class="space-y-3">
+                <button onclick="selectBossReward('bounce')" class="w-full bg-slate-800 hover:bg-blue-900/50 border border-slate-700 hover:border-blue-400 p-3 rounded-xl text-left transition flex items-center gap-3">
+                    <div class="text-2xl p-2 bg-blue-950 rounded-lg">🎯</div>
+                    <div>
+                        <div class="text-xs font-bold text-blue-300">Tiro Ricochete <span id="reward-lvl-bounce" class="text-[10px] bg-blue-900 text-blue-200 px-1 rounded">Nv 1</span></div>
+                        <div class="text-[11px] text-slate-400">O tiro rebate e busca +1 asteroide próximo com dano mantido.</div>
+                    </div>
+                </button>
+
+                <button onclick="selectBossReward('parallel')" class="w-full bg-slate-800 hover:bg-indigo-900/50 border border-slate-700 hover:border-indigo-400 p-3 rounded-xl text-left transition flex items-center gap-3">
+                    <div class="text-2xl p-2 bg-indigo-950 rounded-lg">⚡</div>
+                    <div>
+                        <div class="text-xs font-bold text-indigo-300">Tiro Duplo / Sequenciado <span id="reward-lvl-parallel" class="text-[10px] bg-indigo-900 text-indigo-200 px-1 rounded">Nv 1</span></div>
+                        <div class="text-[11px] text-slate-400">Dispara +1 projétil paralelo em linha reta a cada ataque.</div>
+                    </div>
+                </button>
+
+                <button onclick="selectBossReward('spread')" class="w-full bg-slate-800 hover:bg-cyan-900/50 border border-slate-700 hover:border-cyan-400 p-3 rounded-xl text-left transition flex items-center gap-3">
+                    <div class="text-2xl p-2 bg-cyan-950 rounded-lg">💥</div>
+                    <div>
+                        <div class="text-xs font-bold text-cyan-300">Multi-Tiro em Leque <span id="reward-lvl-spread" class="text-[10px] bg-cyan-900 text-cyan-200 px-1 rounded">Nv 1</span></div>
+                        <div class="text-[11px] text-slate-400">Dispara projéteis adicionais em ângulos divergentes de 15°.</div>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- MODAL RANKING & GAME OVER -->
     <div id="ranking-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
@@ -248,7 +248,7 @@
             document.getElementById('speed-label').innerText = `${gameSpeed}x`;
         }
 
-        /* AUDIO SYSTEM (Web Audio API) */
+        /* AUDIO SYSTEM */
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
         let audioCtx = null;
         function initAudio() { if (!audioCtx) audioCtx = new AudioCtx(); }
@@ -292,6 +292,7 @@
             wave: 1,
             gold: 0,
             gameOver: false,
+            isPaused: false,
             asteroidsInWave: 10,
             asteroidsSpawned: 0,
             asteroidsDefeated: 0,
@@ -311,7 +312,11 @@
             atkSpeed: 1.5,
             goldPerWave: 25,
             goldPerKill: 2,
-            angle: 0
+            angle: 0,
+            // POWER-UPS DA NAVE
+            specialBounce: 0,    // Nv de Ricochete (quiques extras)
+            specialParallel: 1,  // Nv de Tiros Paralelos (1 = normal)
+            specialSpread: 0     // Nv de Leque (0 = desativado, 1 = +2 tiros laterais)
         };
 
         const upgrades = {
@@ -337,7 +342,7 @@
             });
         }
 
-        /* ASTEROIDE COM VÉRTICES IRREGULARES */
+        /* ASTEROIDES ROCHOSOS */
         class Asteroid {
             constructor(type = 'small') {
                 const angle = Math.random() * Math.PI * 2;
@@ -346,6 +351,7 @@
                 this.x = (canvas.width / 2) + Math.cos(angle) * spawnDistance;
                 this.y = (canvas.height / 2) + Math.sin(angle) * spawnDistance;
                 this.type = type;
+                this.id = Math.random().toString(36).substr(2, 9);
 
                 const hpMult = 1 + (game.wave * 0.18);
                 const dmgMult = 1 + (game.wave * 0.12);
@@ -374,7 +380,6 @@
                 }
                 this.maxHp = this.hp;
 
-                // Gerar formato irregular e detalhes de rocha
                 this.vertices = [];
                 const numVerts = Math.floor(Math.random() * 3) + 7;
                 for (let i = 0; i < numVerts; i++) {
@@ -425,7 +430,6 @@
 
                 ctx.restore();
 
-                // Barra de HP
                 if (this.hp < this.maxHp) {
                     const barWidth = this.radius * 2;
                     const barHeight = 4;
@@ -440,21 +444,22 @@
             }
         }
 
-        /* PROJÉTEIS */
+        /* PROJÉTEIS (COM SUPORTE A RICOCHETE) */
         class Bullet {
-            constructor(target) {
-                this.x = canvas.width / 2;
-                this.y = canvas.height / 2;
+            constructor(startX, startY, angle, target = null, bouncesLeft = 0, hitHistory = []) {
+                this.x = startX;
+                this.y = startY;
                 this.speed = 9.5;
                 this.damage = ship.damage;
-                
-                const dx = target.x - this.x;
-                const dy = target.y - this.y;
-                const dist = Math.hypot(dx, dy);
-                this.vx = (dx / dist) * this.speed;
-                this.vy = (dy / dist) * this.speed;
+                this.bouncesLeft = bouncesLeft;
+                this.hitHistory = [...hitHistory];
 
-                ship.angle = Math.atan2(dy, dx);
+                this.vx = Math.cos(angle) * this.speed;
+                this.vy = Math.sin(angle) * this.speed;
+
+                if (target) {
+                    this.hitHistory.push(target.id);
+                }
             }
 
             update() {
@@ -466,11 +471,35 @@
                 ctx.save();
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, 3.5, 0, Math.PI * 2);
-                ctx.fillStyle = '#38bdf8';
-                ctx.shadowColor = '#38bdf8';
+                ctx.fillStyle = this.bouncesLeft > 0 ? '#a855f7' : '#38bdf8'; // Roxo se tiver ricochete
+                ctx.shadowColor = this.bouncesLeft > 0 ? '#c084fc' : '#38bdf8';
                 ctx.shadowBlur = 8;
                 ctx.fill();
                 ctx.restore();
+            }
+
+            // Lógica para Ricochetear no próximo asteroide
+            tryBounce() {
+                if (this.bouncesLeft <= 0) return false;
+
+                let nextTarget = null;
+                let minDist = 220; // Raio máximo de busca do ricochete
+
+                for (let ast of asteroids) {
+                    if (this.hitHistory.includes(ast.id)) continue; // não acertar o mesmo alvo
+                    const dist = Math.hypot(ast.x - this.x, ast.y - this.y);
+                    if (dist < minDist) {
+                        minDist = dist;
+                        nextTarget = ast;
+                    }
+                }
+
+                if (nextTarget) {
+                    const angle = Math.atan2(nextTarget.y - this.y, nextTarget.x - this.x);
+                    bullets.push(new Bullet(this.x, this.y, angle, nextTarget, this.bouncesLeft - 1, this.hitHistory));
+                    return true;
+                }
+                return false;
             }
         }
 
@@ -510,13 +539,13 @@
             }
         }
 
-        /* NOVO DESIGN DA NAVE FUTURISTA */
+        /* NAVE COM VISUAL FUTURISTA */
         function drawShip() {
             ctx.save();
             ctx.translate(ship.x, ship.y);
             ctx.rotate(ship.angle);
 
-            // Fogo / Propulsor
+            // Fogo do Propulsor
             ctx.beginPath();
             ctx.moveTo(-12, -5);
             ctx.lineTo(-22 - Math.random() * 8, 0);
@@ -526,7 +555,7 @@
             ctx.shadowBlur = 10;
             ctx.fill();
 
-            // Corpo da Nave
+            // Corpo
             ctx.beginPath();
             ctx.moveTo(20, 0);
             ctx.lineTo(-12, -15);
@@ -569,6 +598,7 @@
             }
         }
 
+        /* DISPARO AUTOMÁTICO (COM MULTI-TIRO E LEQUE) */
         function autoShoot(now) {
             const interval = 1000 / (ship.atkSpeed * gameSpeed);
             if (now - game.lastShotTime < interval) return;
@@ -589,7 +619,31 @@
 
             if (nearest) {
                 initAudio();
-                bullets.push(new Bullet(nearest));
+                const baseAngle = Math.atan2(nearest.y - centerY, nearest.x - centerX);
+                ship.angle = baseAngle;
+
+                // 1. Tiros Paralelos / Sequenciados
+                const pCount = ship.specialParallel;
+                const offsetStep = 8;
+                const startOffset = -((pCount - 1) * offsetStep) / 2;
+
+                for (let p = 0; p < pCount; p++) {
+                    const perpAngle = baseAngle + Math.PI / 2;
+                    const offsetX = Math.cos(perpAngle) * (startOffset + p * offsetStep);
+                    const offsetY = Math.sin(perpAngle) * (startOffset + p * offsetStep);
+
+                    bullets.push(new Bullet(centerX + offsetX, centerY + offsetY, baseAngle, nearest, ship.specialBounce));
+
+                    // 2. Multi-Tiro em Leque
+                    if (ship.specialSpread > 0) {
+                        for (let s = 1; s <= ship.specialSpread; s++) {
+                            const angleDev = s * (15 * Math.PI / 180);
+                            bullets.push(new Bullet(centerX + offsetX, centerY + offsetY, baseAngle + angleDev, null, ship.specialBounce));
+                            bullets.push(new Bullet(centerX + offsetX, centerY + offsetY, baseAngle - angleDev, null, ship.specialBounce));
+                        }
+                    }
+                }
+
                 playLaserSound();
                 game.lastShotTime = now;
             }
@@ -597,12 +651,35 @@
 
         function checkWaveProgress() {
             if (game.asteroidsDefeated >= game.asteroidsInWave && asteroids.length === 0) {
+                const completedWave = game.wave;
                 game.wave++;
                 game.gold += ship.goldPerWave;
                 game.asteroidsSpawned = 0;
                 game.asteroidsDefeated = 0;
                 game.asteroidsInWave = game.wave % 10 === 0 ? 1 : 8 + (game.wave * 2);
+
+                // EXIBIR MODAL DE RECOMPENSA DE CHEFE A CADA 10 ONDAS
+                if (completedWave % 10 === 0) {
+                    triggerBossRewardModal();
+                }
             }
+        }
+
+        function triggerBossRewardModal() {
+            game.isPaused = true;
+            document.getElementById('reward-lvl-bounce').innerText = `Nv ${ship.specialBounce + 1}`;
+            document.getElementById('reward-lvl-parallel').innerText = `Nv ${ship.specialParallel}`;
+            document.getElementById('reward-lvl-spread').innerText = `Nv ${ship.specialSpread + 1}`;
+            document.getElementById('boss-reward-modal').classList.remove('hidden');
+        }
+
+        function selectBossReward(type) {
+            if (type === 'bounce') ship.specialBounce++;
+            if (type === 'parallel') ship.specialParallel++;
+            if (type === 'spread') ship.specialSpread++;
+
+            document.getElementById('boss-reward-modal').classList.add('hidden');
+            game.isPaused = false;
         }
 
         function buyUpgrade(type) {
@@ -757,85 +834,91 @@
             const deltaTime = (now - lastTime) / 1000;
             lastTime = now;
 
-            ship.x = canvas.width / 2;
-            ship.y = canvas.height / 2;
+            if (!game.isPaused) {
+                ship.x = canvas.width / 2;
+                ship.y = canvas.height / 2;
 
-            if (ship.hp < ship.maxHp) {
-                ship.hp = Math.min(ship.maxHp, ship.hp + (ship.hpRegen * deltaTime * gameSpeed));
-            }
+                if (ship.hp < ship.maxHp) {
+                    ship.hp = Math.min(ship.maxHp, ship.hp + (ship.hpRegen * deltaTime * gameSpeed));
+                }
 
-            handleSpawning();
-            autoShoot(now);
+                handleSpawning();
+                autoShoot(now);
 
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Estrelas
-            ctx.fillStyle = '#ffffff';
-            for (let star of stars) {
-                ctx.globalAlpha = star.alpha;
+                // Estrelas
+                ctx.fillStyle = '#ffffff';
+                for (let star of stars) {
+                    ctx.globalAlpha = star.alpha;
+                    ctx.beginPath();
+                    ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.globalAlpha = 1.0;
+
+                // Raio de Alcance
                 ctx.beginPath();
-                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
-                ctx.fill();
-            }
-            ctx.globalAlpha = 1.0;
+                ctx.arc(ship.x, ship.y, ship.attackRange, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(56, 189, 248, 0.15)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([6, 6]);
+                ctx.stroke();
+                ctx.setLineDash([]);
 
-            // Raio de Alcance
-            ctx.beginPath();
-            ctx.arc(ship.x, ship.y, ship.attackRange, 0, Math.PI * 2);
-            ctx.strokeStyle = 'rgba(56, 189, 248, 0.15)';
-            ctx.lineWidth = 2;
-            ctx.setLineDash([6, 6]);
-            ctx.stroke();
-            ctx.setLineDash([]);
+                // Nave
+                drawShip();
 
-            // Nave
-            drawShip();
+                // Projétil vs Asteroide
+                for (let i = bullets.length - 1; i >= 0; i--) {
+                    let b = bullets[i];
+                    b.update();
+                    b.draw();
 
-            // Projétil vs Asteroide
-            for (let i = bullets.length - 1; i >= 0; i--) {
-                let b = bullets[i];
-                b.update();
-                b.draw();
+                    for (let j = asteroids.length - 1; j >= 0; j--) {
+                        let ast = asteroids[j];
+                        if (Math.hypot(b.x - ast.x, b.y - ast.y) < ast.radius + 4) {
+                            ast.hp -= b.damage;
+                            createExplosion(b.x, b.y, '#38bdf8', 4);
 
-                for (let j = asteroids.length - 1; j >= 0; j--) {
-                    let ast = asteroids[j];
-                    if (Math.hypot(b.x - ast.x, b.y - ast.y) < ast.radius + 4) {
-                        ast.hp -= b.damage;
-                        createExplosion(b.x, b.y, '#38bdf8', 4);
-                        bullets.splice(i, 1);
+                            // Lógica de Ricochete
+                            const bounced = b.tryBounce();
+                            bullets.splice(i, 1);
 
-                        if (ast.hp <= 0) {
-                            game.gold += ast.goldValue;
-                            createExplosion(ast.x, ast.y, ast.color, ast.type === 'boss' ? 24 : 10);
-                            playExplosionSound(ast.type === 'boss');
-                            asteroids.splice(j, 1);
-                            game.asteroidsDefeated++;
-                            checkWaveProgress();
+                            if (ast.hp <= 0) {
+                                game.gold += ast.goldValue;
+                                createExplosion(ast.x, ast.y, ast.color, ast.type === 'boss' ? 24 : 10);
+                                playExplosionSound(ast.type === 'boss');
+                                asteroids.splice(j, 1);
+                                game.asteroidsDefeated++;
+                                checkWaveProgress();
+                            }
+                            break;
                         }
-                        break;
+                    }
+
+                    if (b && (b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height)) {
+                        bullets.splice(i, 1);
                     }
                 }
 
-                if (b && (b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height)) {
-                    bullets.splice(i, 1);
+                // Asteroides
+                for (let ast of asteroids) {
+                    ast.update(deltaTime);
+                    ast.draw();
                 }
+
+                // Partículas
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    let p = particles[i];
+                    p.update();
+                    p.draw();
+                    if (p.life <= 0) particles.splice(i, 1);
+                }
+
+                updateUI();
             }
 
-            // Asteroides
-            for (let ast of asteroids) {
-                ast.update(deltaTime);
-                ast.draw();
-            }
-
-            // Partículas
-            for (let i = particles.length - 1; i >= 0; i--) {
-                let p = particles[i];
-                p.update();
-                p.draw();
-                if (p.life <= 0) particles.splice(i, 1);
-            }
-
-            updateUI();
             requestAnimationFrame(gameLoop);
         }
 
