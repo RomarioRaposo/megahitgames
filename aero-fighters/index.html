@@ -9,9 +9,9 @@
 <body>
 
     <div class="game-container">
-        <!-- Top Bar com Voltar e Score -->
+        <!-- Barra Superior (HUD) -->
         <header class="game-header">
-            <a href="../" class="back-btn">⬅ Voltar ao Hub</a>
+            <a href="../" class="back-btn">⬅ Hub</a>
             <div class="hud">
                 <span>PONTOS: <strong id="score-val">0</strong></span>
                 <span>VIDAS: <strong id="lives-val">3</strong></span>
@@ -21,14 +21,33 @@
         <!-- Canvas do Jogo -->
         <canvas id="gameCanvas" width="480" height="640"></canvas>
 
-        <!-- Overlay de Game Over / Start -->
-        <div id="overlay" class="overlay">
-            <h1 id="overlay-title">AERO FIGHTERS</h1>
-            <p id="overlay-msg">Defenda os céus! Destrua os inimigos e o Boss final.</p>
-            <button id="start-btn" class="btn">JOGAR AGORA</button>
+        <!-- Overlay de Tela Inicial -->
+        <div id="overlay-start" class="overlay">
+            <h1>AERO FIGHTERS</h1>
+            <p>Defenda os céus! O tiro é automático. Movimente sua nave para destruir os inimigos e o Boss final.</p>
+            <button id="start-btn" class="btn">DECOLAR</button>
         </div>
 
-        <!-- Controles Touch para Mobile -->
+        <!-- Overlay de Game Over & Ranking -->
+        <div id="overlay-gameover" class="overlay" style="display: none;">
+            <h1 id="gameover-title">GAME OVER</h1>
+            <p id="gameover-msg">Pontuação final: <strong id="final-score">0</strong></p>
+            
+            <div id="nick-form" class="nick-form">
+                <input type="text" id="player-nick" maxlength="12" placeholder="Seu Apelido / Nick" autocomplete="off">
+                <button id="save-score-btn" class="btn">SALVAR NO RANKING</button>
+            </div>
+
+            <!-- Tabela Ranking Top 10 -->
+            <div class="ranking-container">
+                <h3>🏆 TOP 10 PILOTOS</h3>
+                <ol id="leaderboard-list"></ol>
+            </div>
+
+            <button id="restart-btn" class="btn btn-secondary">JOGAR NOVAMENTE</button>
+        </div>
+
+        <!-- Controles Touch para Mobile (Apenas Direcionais) -->
         <div class="mobile-controls">
             <div class="dpad">
                 <button id="btn-up" class="touch-btn">▲</button>
@@ -37,9 +56,6 @@
                     <button id="btn-down" class="touch-btn">▼</button>
                     <button id="btn-right" class="touch-btn">▶</button>
                 </div>
-            </div>
-            <div class="action-btns">
-                <button id="btn-fire" class="touch-btn fire-btn">🔥 TIRO</button>
             </div>
         </div>
     </div>
