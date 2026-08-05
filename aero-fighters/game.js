@@ -20,10 +20,15 @@ let score = 0;
 let lives = 3;
 let frameCount = 0;
 
-// Estado dos Controles (Movimentação apenas - Tiro é Automático)
+// Estado dos Controles Teclado (Desktop)
 const keys = { left: false, right: false, up: false, down: false };
 
-// Fundo Estrelado Dinâmico
+// Estado de Controle Touch (Arraste)
+let isTouching = false;
+let targetTouchX = null;
+let targetTouchY = null;
+
+// Fundo Estrelado
 const stars = Array.from({ length: 60 }, () => ({
     x: Math.random() * canvas.width,
     y: Math.random() * canvas.height,
@@ -47,7 +52,7 @@ let enemies = [];
 let particles = [];
 let boss = null;
 
-// Controles Teclado (Desktop)
+// Eventos de Teclado (Desktop)
 window.addEventListener('keydown', e => handleKey(e, true));
 window.addEventListener('keyup', e => handleKey(e, false));
 
@@ -58,19 +63,25 @@ function handleKey(e, isPressed) {
     if (e.key === 'ArrowDown' || e.key === 's') keys.down = isPressed;
 }
 
-// Controles Touch (Mobile)
-function setupTouchBtn(id, keyName) {
-    const btn = document.getElementById(id);
-    btn.addEventListener('touchstart', (e) => { e.preventDefault(); keys[keyName] = true; });
-    btn.addEventListener('touchend', (e) => { e.preventDefault(); keys[keyName] = false; });
+// EVENTOS TOUCH DE ARRASTE (Mobile)
+canvas.addEventListener('touchstart', handleTouchMove, { passive: false });
+canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+canvas.addEventListener('touchend', () => { isTouching = false; });
+
+function handleTouchMove(e) {
+    e.preventDefault();
+    if (!gameActive) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0];
+
+    // Calcula a posição do toque relativa ao tamanho do Canvas
+    targetTouchX = (touch.clientX - rect.left) * (canvas.width / rect.width) - player.width / 2;
+    targetTouchY = (touch.clientY - rect.top) * (canvas.height / rect.height) - player.height / 2;
+    isTouching = true;
 }
 
-setupTouchBtn('btn-left', 'left');
-setupTouchBtn('btn-right', 'right');
-setupTouchBtn('btn-up', 'up');
-setupTouchBtn('btn-down', 'down');
-
-// Eventos de Início e Ranking
+// Início / Restart / Ranking
 startBtn.addEventListener('click', startGame);
 restartBtn.addEventListener('click', startGame);
 saveScoreBtn.addEventListener('click', saveRankingScore);
@@ -166,26 +177,38 @@ function gameLoop() {
     requestAnimationFrame(gameLoop);
 }
 
-// Atualizações
-function updateBackground() {
-    stars.forEach(s => {
-        s.y += s.speed;
-        if (s.y > canvas.height) s.y = 0;
-    });
-}
-
+// Lógica de Movimentação do Jogador
 function updatePlayer() {
+    // 1. Movimentação via Touch (Arraste)
+    if (isTouching && targetTouchX !== null && targetTouchY !== null) {
+        // Interpolação (Lerp) para a nave seguir o dedo de forma suave
+        player.x += (targetTouchX - player.x) * 0.2;
+        player.y += (targetTouchY - player.y) * 0.2;
+    }
+
+    // 2. Movimentação via Teclado (Desktop)
     if (keys.left && player.x > 0) player.x -= player.speed;
     if (keys.right && player.x < canvas.width - player.width) player.x += player.speed;
     if (keys.up && player.y > 0) player.y -= player.speed;
     if (keys.down && player.y < canvas.height - player.height) player.y += player.speed;
 
-    // TIRO AUTOMÁTICO (A cada 8 quadros)
+    // Trava de limites da tela
+    player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
+    player.y = Math.max(0, Math.min(canvas.height - player.height, player.y));
+
+    // TIRO AUTOMÁTICO
     if (frameCount - player.lastShot > 8) {
         bullets.push({ x: player.x + 6, y: player.y, speed: 10 });
         bullets.push({ x: player.x + player.width - 10, y: player.y, speed: 10 });
         player.lastShot = frameCount;
     }
+}
+
+function updateBackground() {
+    stars.forEach(s => {
+        s.y += s.speed;
+        if (s.y > canvas.height) s.y = 0;
+    });
 }
 
 function updateBullets() {
@@ -332,14 +355,13 @@ function hitPlayer() {
     }
 }
 
-// Renderização Gráfica Aprimorada
+// Renderização
 function drawBackground() {
     ctx.fillStyle = '#ffffff';
     stars.forEach(s => ctx.fillRect(s.x, s.y, s.size, s.size));
 }
 
 function drawPlayer() {
-    // Corpo Delta
     ctx.fillStyle = '#2563eb';
     ctx.beginPath();
     ctx.moveTo(player.x + player.width / 2, player.y);
@@ -349,21 +371,16 @@ function drawPlayer() {
     ctx.closePath();
     ctx.fill();
 
-    // Cabine de Cristal Brilhante
     ctx.fillStyle = '#38bdf8';
     ctx.fillRect(player.x + player.width / 2 - 3, player.y + 10, 6, 12);
 
-    // Fogo da Propulsão
     ctx.fillStyle = '#f59e0b';
     ctx.fillRect(player.x + player.width / 2 - 4, player.y + player.height - 2, 8, 8 + Math.random() * 4);
 }
 
 function drawBullets() {
-    // Tiros Laser Neon
     ctx.fillStyle = '#38bdf8';
-    bullets.forEach(b => {
-        ctx.fillRect(b.x, b.y, 4, 12);
-    });
+    bullets.forEach(b => ctx.fillRect(b.x, b.y, 4, 12));
 
     ctx.fillStyle = '#ef4444';
     enemyBullets.forEach(eb => ctx.fillRect(eb.x - 2, eb.y, 5, 5));
@@ -387,7 +404,6 @@ function drawBoss() {
     ctx.fillStyle = '#ef4444';
     ctx.fillRect(boss.x, boss.y, boss.width, boss.height);
 
-    // Barra de Vida
     ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
     ctx.fillRect(boss.x, boss.y - 14, boss.width, 8);
     ctx.fillStyle = '#10b981';
