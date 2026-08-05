@@ -1,805 +1,146 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Space Defense - MegaHit Games</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Firebase App e Database Compat -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-
-    <style>
-        * {
-            user-select: none;
-            -webkit-user-select: none;
-            touch-action: manipulation;
-        }
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #0b0f19;
-            color: #f8fafc;
-        }
-        canvas {
-            display: block;
-            width: 100%;
-            height: 100%;
-        }
-        .hud-glass {
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        .btn-upgrade {
-            background: linear-gradient(135deg, #1e293b, #0f172a);
-            border: 1px solid #334155;
-            transition: all 0.15s ease;
-        }
-        .btn-upgrade:hover:not(:disabled) {
-            border-color: #3b82f6;
-            transform: translateY(-2px);
-            background: linear-gradient(135deg, #2563eb, #1d4ed8);
-        }
-        .btn-upgrade:active:not(:disabled) {
-            transform: translateY(0);
-        }
-        .btn-upgrade:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-            border-color: #1e293b;
-        }
-        /* Custom scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #334155;
-            border-radius: 4px;
-        }
-    </style>
-</head>
-<body class="h-screen w-screen flex flex-col overflow-hidden select-none">
-
-    <!-- HUD SUPERIOR: STATUS DOS ASTEROIDES E DA ONDA -->
-    <header class="hud-glass px-4 py-2 flex items-center justify-between text-xs sm:text-sm z-10 shadow-lg">
-        <div class="flex items-center gap-3">
-            <a href="../../index.html" class="flex items-center gap-1 font-bold text-blue-400 hover:text-blue-300 transition">
-                <span>◀</span> <span class="hidden sm:inline">Hub</span>
-            </a>
-            <div class="h-4 w-[1px] bg-slate-700"></div>
-            <div class="bg-blue-950/80 border border-blue-500/30 px-3 py-1 rounded-full text-blue-300 font-bold">
-                Onda <span id="hud-wave" class="text-white text-base">1</span>
-            </div>
-        </div>
-
-        <!-- STATUS INIMIGOS (ONDA ATUAL) -->
-        <div class="hidden md:flex items-center gap-4 text-slate-300">
-            <div class="flex items-center gap-1">
-                <span class="text-slate-400">Inimigo HP:</span>
-                <span id="hud-ast-hp" class="font-bold text-red-400">10</span>
-            </div>
-            <div class="flex items-center gap-1">
-                <span class="text-slate-400">Ataque/s:</span>
-                <span id="hud-ast-dmg" class="font-bold text-amber-400">2/s</span>
-            </div>
-        </div>
-
-        <div class="flex items-center gap-3">
-            <!-- OURO -->
-            <div class="bg-amber-950/60 border border-amber-500/30 px-3 py-1 rounded-full text-amber-300 font-bold flex items-center gap-1">
-                <span>🪙</span> <span id="hud-gold" class="text-amber-400 text-base">0</span>
-            </div>
-            <!-- RANKING BTN -->
-            <button onclick="toggleRankingModal(true)" class="bg-slate-800 hover:bg-slate-700 border border-slate-600 px-3 py-1 rounded-full text-xs font-semibold text-slate-200 transition">
-                🏆 Rank
-            </button>
-        </div>
-    </header>
-
-    <!-- ÁREA CENTRAL DO CANVAS -->
-    <main class="flex-1 relative bg-slate-950 overflow-hidden" id="canvas-container">
-        <canvas id="gameCanvas"></canvas>
-
-        <!-- STATUS FLUTUANTE DA NAVE (HP + REGEN) -->
-        <div class="absolute top-3 left-1/2 -translate-x-1/2 hud-glass px-4 py-1.5 rounded-full flex items-center gap-3 text-xs shadow-md border border-slate-700/50 pointer-events-none">
-            <div class="flex items-center gap-1">
-                <span class="text-emerald-400 font-bold">HP Nave:</span>
-                <span id="hud-ship-hp" class="font-extrabold text-white">100/100</span>
-            </div>
-            <div class="w-20 bg-slate-800 h-2 rounded-full overflow-hidden border border-slate-700">
-                <div id="hud-hp-bar" class="bg-emerald-500 h-full w-full transition-all duration-150"></div>
-            </div>
-            <span id="hud-ship-regen" class="text-emerald-400/80 font-semibold text-[10px]">+0/s</span>
-        </div>
-    </main>
-
-    <!-- HUD INFERIOR: LOJA DE MELHORIAS -->
-    <footer class="hud-glass p-2 sm:p-3 z-10 border-t border-slate-800">
-        <div class="max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
-            
-            <!-- UPGRADE 1: ATK SPEED -->
-            <button id="btn-upgrade-atkSpeed" onclick="buyUpgrade('atkSpeed')" class="btn-upgrade p-2 rounded-xl text-left flex flex-col justify-between">
-                <div class="flex justify-between items-start">
-                    <span class="text-[11px] font-bold text-blue-300">⚡ Atk Speed</span>
-                    <span id="lvl-atkSpeed" class="text-[10px] bg-blue-900/60 text-blue-200 px-1.5 py-0.5 rounded font-mono">Nv 1</span>
-                </div>
-                <div class="text-[10px] text-slate-400 mt-1">Disparos/seg</div>
-                <div class="mt-1 text-xs font-bold text-amber-400">🪙 <span id="cost-atkSpeed">15</span></div>
-            </button>
-
-            <!-- UPGRADE 2: DAMAGE -->
-            <button id="btn-upgrade-damage" onclick="buyUpgrade('damage')" class="btn-upgrade p-2 rounded-xl text-left flex flex-col justify-between">
-                <div class="flex justify-between items-start">
-                    <span class="text-[11px] font-bold text-red-300">⚔️ Dano</span>
-                    <span id="lvl-damage" class="text-[10px] bg-red-900/60 text-red-200 px-1.5 py-0.5 rounded font-mono">Nv 1</span>
-                </div>
-                <div class="text-[10px] text-slate-400 mt-1">Por projétil</div>
-                <div class="mt-1 text-xs font-bold text-amber-400">🪙 <span id="cost-damage">10</span></div>
-            </button>
-
-            <!-- UPGRADE 3: HP MAX -->
-            <button id="btn-upgrade-hp" onclick="buyUpgrade('hp')" class="btn-upgrade p-2 rounded-xl text-left flex flex-col justify-between">
-                <div class="flex justify-between items-start">
-                    <span class="text-[11px] font-bold text-emerald-300">🛡️ HP Máximo</span>
-                    <span id="lvl-hp" class="text-[10px] bg-emerald-900/60 text-emerald-200 px-1.5 py-0.5 rounded font-mono">Nv 1</span>
-                </div>
-                <div class="text-[10px] text-slate-400 mt-1">Vida da Nave</div>
-                <div class="mt-1 text-xs font-bold text-amber-400">🪙 <span id="cost-hp">20</span></div>
-            </button>
-
-            <!-- UPGRADE 4: HP REGEN -->
-            <button id="btn-upgrade-hpRegen" onclick="buyUpgrade('hpRegen')" class="btn-upgrade p-2 rounded-xl text-left flex flex-col justify-between">
-                <div class="flex justify-between items-start">
-                    <span class="text-[11px] font-bold text-teal-300">💖 HP Regen</span>
-                    <span id="lvl-hpRegen" class="text-[10px] bg-teal-900/60 text-teal-200 px-1.5 py-0.5 rounded font-mono">Nv 0</span>
-                </div>
-                <div class="text-[10px] text-slate-400 mt-1">Cura por seg</div>
-                <div class="mt-1 text-xs font-bold text-amber-400">🪙 <span id="cost-hpRegen">25</span></div>
-            </button>
-
-            <!-- UPGRADE 5: GOLD / WAVE -->
-            <button id="btn-upgrade-goldWave" onclick="buyUpgrade('goldWave')" class="btn-upgrade p-2 rounded-xl text-left flex flex-col justify-between">
-                <div class="flex justify-between items-start">
-                    <span class="text-[11px] font-bold text-amber-300">💰 Ouro/Onda</span>
-                    <span id="lvl-goldWave" class="text-[10px] bg-amber-900/60 text-amber-200 px-1.5 py-0.5 rounded font-mono">Nv 1</span>
-                </div>
-                <div class="text-[10px] text-slate-400 mt-1">Bônus de Onda</div>
-                <div class="mt-1 text-xs font-bold text-amber-400">🪙 <span id="cost-goldWave">30</span></div>
-            </button>
-
-            <!-- UPGRADE 6: GOLD / KILL -->
-            <button id="btn-upgrade-goldKill" onclick="buyUpgrade('goldKill')" class="btn-upgrade p-2 rounded-xl text-left flex flex-col justify-between">
-                <div class="flex justify-between items-start">
-                    <span class="text-[11px] font-bold text-yellow-300">🎯 Ouro/Abate</span>
-                    <span id="lvl-goldKill" class="text-[10px] bg-yellow-900/60 text-yellow-200 px-1.5 py-0.5 rounded font-mono">Nv 1</span>
-                </div>
-                <div class="text-[10px] text-slate-400 mt-1">Por Asteroide</div>
-                <div class="mt-1 text-xs font-bold text-amber-400">🪙 <span id="cost-goldKill">40</span></div>
-            </button>
-
-        </div>
-    </footer>
-
-    <!-- MODAL RANKING & GAME OVER -->
-    <div id="ranking-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 text-center shadow-2xl relative">
-            <button onclick="toggleRankingModal(false)" class="absolute top-4 right-4 text-slate-400 hover:text-white font-bold text-xl">✕</button>
-            
-            <div id="modal-header-icon" class="text-4xl mb-2">🏆</div>
-            <h2 id="modal-title" class="text-xl font-extrabold text-white mb-1">Top 10 Defensores Espaciais</h2>
-            <p id="modal-subtitle" class="text-xs text-slate-400 mb-4">Classificação global registrada via Firebase</p>
-
-            <!-- LISTA DE SCORE -->
-            <div class="bg-slate-950 rounded-xl p-3 border border-slate-800 mb-4 max-h-56 overflow-y-auto">
-                <ol id="ranking-list" class="space-y-1.5 text-xs text-left">
-                    <li class="text-slate-500 text-center py-2">Carregando pontuações...</li>
-                </ol>
-            </div>
-
-            <!-- BOTÃO RESTART (GAME OVER) -->
-            <div id="game-over-controls" class="hidden flex-col gap-3">
-                <div class="bg-red-950/40 border border-red-500/30 p-3 rounded-xl text-left">
-                    <div class="text-xs text-red-300 font-semibold mb-1">Você resistiu até a Onda: <b id="final-wave" class="text-white text-sm">1</b></div>
-                    <input type="text" id="player-name" placeholder="Digite seu nome para o Ranking..." maxlength="15" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500">
-                </div>
-                <button onclick="submitScoreAndRestart()" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3 rounded-xl shadow-lg transition text-sm">
-                    Salvar Pontuação & Recomeçar
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        /* CONFIGURAÇÃO DO FIREBASE */
-        const firebaseConfig = {
-            apiKey: "AIzaSyDummyKeyForDevelopment12345",
-            authDomain: "megahitgames.firebaseapp.com",
-            databaseURL: "https://megahitgames-default-rtdb.firebaseio.com",
-            projectId: "megahitgames",
-            storageBucket: "megahitgames.appspot.com",
-            messagingSenderId: "123456789012",
-            appId: "1:123456789012:web:abc123def456"
-        };
-
-        let db = null;
-        try {
-            if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-            db = firebase.database();
-        } catch(e) {
-            console.log("Firebase fallback mode: Local Leaderboard active");
-        }
-
-        /* CANVAS SETUP */
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const container = document.getElementById('canvas-container');
-
-        function resizeCanvas() {
-            canvas.width = container.clientWidth;
-            canvas.height = container.clientHeight;
-        }
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
-
-        /* AUDIO SYSTEM (Web Audio API - sem arquivos externos) */
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        let audioCtx = null;
-
-        function initAudio() {
-            if (!audioCtx) audioCtx = new AudioCtx();
-        }
-
-        function playLaserSound() {
-            if (!audioCtx) return;
-            try {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(800, audioCtx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.08);
-                gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
-                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.08);
-            } catch(e) {}
-        }
-
-        function playExplosionSound(isBoss = false) {
-            if (!audioCtx) return;
-            try {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'square';
-                osc.frequency.setValueAtTime(isBoss ? 120 : 200, audioCtx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(30, audioCtx.currentTime + (isBoss ? 0.4 : 0.2));
-                gain.gain.setValueAtTime(isBoss ? 0.25 : 0.12, audioCtx.currentTime);
-                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + (isBoss ? 0.4 : 0.2));
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start();
-                osc.stop(audioCtx.currentTime + (isBoss ? 0.4 : 0.2));
-            } catch(e) {}
-        }
-
-        /* ESTADO DO JOGO */
-        const game = {
-            wave: 1,
-            gold: 0,
-            gameOver: false,
-            asteroidsInWave: 10,
-            asteroidsSpawned: 0,
-            asteroidsDefeated: 0,
-            lastShotTime: 0,
-            scoreSubmitted: false
-        };
-
-        const ship = {
-            x: canvas.width / 2,
-            y: canvas.height / 2,
-            radius: 20,
-            attackRange: 180,
-            hp: 100,
-            maxHp: 100,
-            hpRegen: 0,
-            damage: 10,
-            atkSpeed: 1.5, // disparos por segundo
-            goldPerWave: 25,
-            goldPerKill: 2
-        };
-
-        const upgrades = {
-            atkSpeed: { lvl: 1, cost: 15, scale: 1.45 },
-            damage:   { lvl: 1, cost: 10, scale: 1.40 },
-            hp:       { lvl: 1, cost: 20, scale: 1.35 },
-            hpRegen:  { lvl: 0, cost: 25, scale: 1.50 },
-            goldWave: { lvl: 1, cost: 30, scale: 1.45 },
-            goldKill: { lvl: 1, cost: 40, scale: 1.50 }
-        };
-
-        let bullets = [];
-        let asteroids = [];
-        let particles = [];
-        let stars = [];
-
-        // Inicializar Fundo Estrelado
-        for (let i = 0; i < 70; i++) {
-            stars.push({
-                x: Math.random() * window.innerWidth,
-                y: Math.random() * window.innerHeight,
-                size: Math.random() * 1.8 + 0.5,
-                alpha: Math.random() * 0.8 + 0.2
-            });
-        }
-
-        class Asteroid {
-            constructor(type = 'small') {
-                const angle = Math.random() * Math.PI * 2;
-                const spawnDistance = Math.max(canvas.width, canvas.height) / 2 + 60;
-
-                this.x = (canvas.width / 2) + Math.cos(angle) * spawnDistance;
-                this.y = (canvas.height / 2) + Math.sin(angle) * spawnDistance;
-                this.type = type;
-
-                // Escalonamento por onda
-                const hpMult = 1 + (game.wave * 0.18);
-                const dmgMult = 1 + (game.wave * 0.12);
-
-                if (type === 'boss') {
-                    this.radius = 36;
-                    this.hp = Math.floor(160 * hpMult * 2.5);
-                    this.speed = 0.6;
-                    this.damagePerSec = Math.floor(18 * dmgMult);
-                    this.goldValue = ship.goldPerKill * 12;
-                    this.color = '#ef4444'; // vermelho boss
-                } else if (type === 'medium') {
-                    this.radius = 22;
-                    this.hp = Math.floor(25 * hpMult);
-                    this.speed = 1.0;
-                    this.damagePerSec = Math.floor(6 * dmgMult);
-                    this.goldValue = ship.goldPerKill * 3;
-                    this.color = '#f97316'; // laranja medio
-                } else {
-                    this.radius = 13;
-                    this.hp = Math.floor(8 * hpMult);
-                    this.speed = 1.6;
-                    this.damagePerSec = Math.floor(2 * dmgMult);
-                    this.goldValue = ship.goldPerKill;
-                    this.color = '#94a3b8'; // cinza pequeno
-                }
-                this.maxHp = this.hp;
-            }
-
-            update(deltaTime) {
-                const centerX = canvas.width / 2;
-                const centerY = canvas.height / 2;
-                const dx = centerX - this.x;
-                const dy = centerY - this.y;
-                const dist = Math.hypot(dx, dy);
-
-                if (dist > ship.radius + this.radius * 0.5) {
-                    this.x += (dx / dist) * this.speed;
-                    this.y += (dy / dist) * this.speed;
-                } else {
-                    // Colisão contínua com a nave
-                    ship.hp -= this.damagePerSec * deltaTime;
-                    if (ship.hp <= 0) {
-                        ship.hp = 0;
-                        triggerGameOver();
-                    }
-                }
-            }
-
-            draw() {
-                ctx.save();
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                ctx.fillStyle = this.color;
-                ctx.shadowColor = this.color;
-                ctx.shadowBlur = this.type === 'boss' ? 15 : 5;
-                ctx.fill();
-                ctx.lineWidth = 2;
-                ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-                ctx.stroke();
-                ctx.restore();
-
-                // Barra de HP individual acima do asteroide
-                if (this.hp < this.maxHp) {
-                    const barWidth = this.radius * 2;
-                    const barHeight = 4;
-                    const barX = this.x - this.radius;
-                    const barY = this.y - this.radius - 8;
-
-                    ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
-                    ctx.fillRect(barX, barY, barWidth, barHeight);
-                    ctx.fillStyle = '#ef4444';
-                    ctx.fillRect(barX, barY, (this.hp / this.maxHp) * barWidth, barHeight);
-                }
-            }
-        }
-
-        class Bullet {
-            constructor(target) {
-                this.x = canvas.width / 2;
-                this.y = canvas.height / 2;
-                this.speed = 8.5;
-                this.damage = ship.damage;
-                
-                const dx = target.x - this.x;
-                const dy = target.y - this.y;
-                const dist = Math.hypot(dx, dy);
-                this.vx = (dx / dist) * this.speed;
-                this.vy = (dy / dist) * this.speed;
-            }
-
-            update() {
-                this.x += this.vx;
-                this.y += this.vy;
-            }
-
-            draw() {
-                ctx.save();
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, 4, 0, Math.PI * 2);
-                ctx.fillStyle = '#38bdf8';
-                ctx.shadowColor = '#38bdf8';
-                ctx.shadowBlur = 8;
-                ctx.fill();
-                ctx.restore();
-            }
-        }
-
-        class Particle {
-            constructor(x, y, color) {
-                this.x = x;
-                this.y = y;
-                this.color = color;
-                this.radius = Math.random() * 2.5 + 1;
-                const angle = Math.random() * Math.PI * 2;
-                const speed = Math.random() * 3 + 1;
-                this.vx = Math.cos(angle) * speed;
-                this.vy = Math.sin(angle) * speed;
-                this.life = 1.0;
-                this.decay = Math.random() * 0.04 + 0.02;
-            }
-            update() {
-                this.x += this.vx;
-                this.y += this.vy;
-                this.life -= this.decay;
-            }
-            draw() {
-                ctx.save();
-                ctx.globalAlpha = Math.max(0, this.life);
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                ctx.fillStyle = this.color;
-                ctx.fill();
-                ctx.restore();
-            }
-        }
-
-        function createExplosion(x, y, color, count = 12) {
-            for (let i = 0; i < count; i++) {
-                particles.push(new Particle(x, y, color));
-            }
-        }
-
-        function handleSpawning() {
-            if (game.asteroidsSpawned < game.asteroidsInWave && Math.random() < 0.025) {
-                if (game.wave % 10 === 0) {
-                    // ONDA BOSS
-                    if (game.asteroidsSpawned === 0) {
-                        asteroids.push(new Asteroid('boss'));
-                        game.asteroidsSpawned = game.asteroidsInWave;
-                    }
-                } else {
-                    // ONDA NORMAL
-                    const type = Math.random() < 0.25 ? 'medium' : 'small';
-                    asteroids.push(new Asteroid(type));
-                    game.asteroidsSpawned++;
-                }
-            }
-        }
-
-        function autoShoot(now) {
-            const interval = 1000 / ship.atkSpeed;
-            if (now - game.lastShotTime < interval) return;
-
-            const centerX = canvas.width / 2;
-            const centerY = canvas.height / 2;
-
-            let nearest = null;
-            let minDist = ship.attackRange;
-
-            for (let ast of asteroids) {
-                const dist = Math.hypot(ast.x - centerX, ast.y - centerY);
-                if (dist <= minDist) {
-                    minDist = dist;
-                    nearest = ast;
-                }
-            }
-
-            if (nearest) {
-                initAudio();
-                bullets.push(new Bullet(nearest));
-                playLaserSound();
-                game.lastShotTime = now;
-            }
-        }
-
-        function checkWaveProgress() {
-            if (game.asteroidsDefeated >= game.asteroidsInWave && asteroids.length === 0) {
-                game.wave++;
-                game.gold += ship.goldPerWave;
-                game.asteroidsSpawned = 0;
-                game.asteroidsDefeated = 0;
-                game.asteroidsInWave = game.wave % 10 === 0 ? 1 : 8 + (game.wave * 2);
-            }
-        }
-
-        function buyUpgrade(type) {
-            initAudio();
-            const u = upgrades[type];
-            if (game.gold >= u.cost) {
-                game.gold -= u.cost;
-                u.lvl++;
-
-                switch(type) {
-                    case 'atkSpeed': ship.atkSpeed += 0.3; break;
-                    case 'damage': ship.damage += 6; break;
-                    case 'hp': 
-                        ship.maxHp += 30; 
-                        ship.hp = Math.min(ship.maxHp, ship.hp + 30); 
-                        break;
-                    case 'hpRegen': ship.hpRegen += 0.8; break;
-                    case 'goldWave': ship.goldPerWave += 12; break;
-                    case 'goldKill': ship.goldPerKill += 1; break;
-                }
-
-                u.cost = Math.floor(u.cost * u.scale);
-                updateUI();
-            }
-        }
-
-        function updateUI() {
-            document.getElementById('hud-wave').innerText = game.wave;
-            document.getElementById('hud-gold').innerText = Math.floor(game.gold);
-
-            // Inimigo HP base e Dano base
-            const hpBase = Math.floor(10 * (1 + game.wave * 0.18));
-            const dmgBase = Math.floor(2 * (1 + game.wave * 0.12));
-            document.getElementById('hud-ast-hp').innerText = hpBase;
-            document.getElementById('hud-ast-dmg').innerText = `${dmgBase}/s`;
-
-            // Ship status
-            document.getElementById('hud-ship-hp').innerText = `${Math.ceil(ship.hp)}/${ship.maxHp}`;
-            document.getElementById('hud-ship-regen').innerText = `+${ship.hpRegen.toFixed(1)}/s`;
-            const hpPercent = Math.max(0, (ship.hp / ship.maxHp) * 100);
-            document.getElementById('hud-hp-bar').style.width = `${hpPercent}%`;
-
-            // Botões da Loja
-            for (let key in upgrades) {
-                const u = upgrades[key];
-                const btn = document.getElementById(`btn-upgrade-${key}`);
-                const lvlSpan = document.getElementById(`lvl-${key}`);
-                const costSpan = document.getElementById(`cost-${key}`);
-
-                if (lvlSpan) lvlSpan.innerText = `Nv ${u.lvl}`;
-                if (costSpan) costSpan.innerText = u.cost;
-                if (btn) btn.disabled = game.gold < u.cost;
-            }
-        }
-
-        function toggleRankingModal(show) {
-            const modal = document.getElementById('ranking-modal');
-            if (show) {
-                modal.classList.remove('hidden');
-                loadRanking();
-            } else {
-                modal.classList.add('hidden');
-            }
-        }
-
-        function triggerGameOver() {
-            game.gameOver = true;
-            initAudio();
-            playExplosionSound(true);
-
-            document.getElementById('final-wave').innerText = game.wave;
-            document.getElementById('modal-header-icon').innerText = '💥';
-            document.getElementById('modal-title').innerText = 'Fim de Jogo!';
-            document.getElementById('modal-subtitle').innerText = 'Sua nave foi destruída pelos asteroides.';
-            document.getElementById('game-over-controls').classList.remove('hidden');
-            document.getElementById('game-over-controls').classList.add('flex');
-            
-            toggleRankingModal(true);
-        }
-
-        function submitScoreAndRestart() {
-            if (game.scoreSubmitted) return;
-            const nameInput = document.getElementById('player-name').value.trim() || "Piloto Anônimo";
-            
-            if (db) {
-                db.ref('ranking_space_defense').push({
-                    name: nameInput,
-                    wave: game.wave,
-                    date: new Date().toISOString()
-                });
-            } else {
-                // LocalStorage Fallback
-                let localScores = JSON.parse(localStorage.getItem('megahit_sd_scores') || '[]');
-                localScores.push({ name: nameInput, wave: game.wave });
-                localScores.sort((a,b) => b.wave - a.wave);
-                localStorage.setItem('megahit_sd_scores', JSON.stringify(localScores.slice(0, 10)));
-            }
-
-            game.scoreSubmitted = true;
-            location.reload();
-        }
-
-        function loadRanking() {
-            const listEl = document.getElementById('ranking-list');
-            listEl.innerHTML = '<li class="text-slate-500 text-center py-2">Buscando Melhores Pilotos...</li>';
-
-            if (db) {
-                db.ref('ranking_space_defense').orderByChild('wave').limitToLast(10).once('value', (snapshot) => {
-                    listEl.innerHTML = '';
-                    let scores = [];
-                    snapshot.forEach(child => scores.push(child.val()));
-                    scores.reverse();
-
-                    if (scores.length === 0) {
-                        listEl.innerHTML = '<li class="text-slate-500 text-center py-2">Nenhuma pontuação registrada ainda. Seja o primeiro!</li>';
-                        return;
-                    }
-
-                    scores.forEach((data, index) => {
-                        const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`;
-                        const li = document.createElement('li');
-                        li.className = "flex justify-between items-center bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800";
-                        li.innerHTML = `
-                            <span class="font-bold text-slate-200"><span class="mr-2">${medal}</span>${data.name}</span>
-                            <span class="font-extrabold text-blue-400">Onda ${data.wave}</span>
-                        `;
-                        listEl.appendChild(li);
-                    });
-                });
-            } else {
-                // Carregar LocalStorage
-                let localScores = JSON.parse(localStorage.getItem('megahit_sd_scores') || '[]');
-                listEl.innerHTML = '';
-                if (localScores.length === 0) {
-                    listEl.innerHTML = '<li class="text-slate-500 text-center py-2">Sem pontuações salvas.</li>';
-                    return;
-                }
-                localScores.forEach((data, index) => {
-                    const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`;
-                    const li = document.createElement('li');
-                    li.className = "flex justify-between items-center bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800";
-                    li.innerHTML = `
-                        <span class="font-bold text-slate-200"><span class="mr-2">${medal}</span>${data.name}</span>
-                        <span class="font-extrabold text-blue-400">Onda ${data.wave}</span>
-                    `;
-                    listEl.appendChild(li);
-                });
-            }
-        }
-
-        /* LOOP PRINCIPAL DE JOGO */
-        let lastTime = performance.now();
-
-        function gameLoop(now) {
-            if (game.gameOver) return;
-
-            const deltaTime = (now - lastTime) / 1000;
-            lastTime = now;
-
-            // Recalcular centro da nave
-            ship.x = canvas.width / 2;
-            ship.y = canvas.height / 2;
-
-            // HP Regen
-            if (ship.hp < ship.maxHp) {
-                ship.hp = Math.min(ship.maxHp, ship.hp + (ship.hpRegen * deltaTime));
-            }
-
-            // Inimigos e Disparo
-            handleSpawning();
-            autoShoot(now);
-
-            // Renderizar Tela
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Desenhar Estrelas de Fundo
-            ctx.fillStyle = '#ffffff';
-            for (let star of stars) {
-                ctx.globalAlpha = star.alpha;
-                ctx.beginPath();
-                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
-                ctx.fill();
-            }
-            ctx.globalAlpha = 1.0;
-
-            // Desenhar Raio Alcance de Ataque
-            ctx.beginPath();
-            ctx.arc(ship.x, ship.y, ship.attackRange, 0, Math.PI * 2);
-            ctx.strokeStyle = 'rgba(56, 189, 248, 0.15)';
-            ctx.lineWidth = 2;
-            ctx.setLineDash([6, 6]);
-            ctx.stroke();
-            ctx.setLineDash([]);
-
-            // Desenhar Nave Principal
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(ship.x, ship.y, ship.radius, 0, Math.PI * 2);
-            ctx.fillStyle = '#0284c7';
-            ctx.shadowColor = '#38bdf8';
-            ctx.shadowBlur = 15;
-            ctx.fill();
-            ctx.lineWidth = 3;
-            ctx.strokeStyle = '#38bdf8';
-            ctx.stroke();
-            ctx.restore();
-
-            // Projéteis
-            for (let i = bullets.length - 1; i >= 0; i--) {
-                let b = bullets[i];
-                b.update();
-                b.draw();
-
-                // Checar colisão com Asteroides
-                for (let j = asteroids.length - 1; j >= 0; j--) {
-                    let ast = asteroids[j];
-                    if (Math.hypot(b.x - ast.x, b.y - ast.y) < ast.radius + 4) {
-                        ast.hp -= b.damage;
-                        createExplosion(b.x, b.y, '#38bdf8', 4);
-                        bullets.splice(i, 1);
-
-                        if (ast.hp <= 0) {
-                            game.gold += ast.goldValue;
-                            createExplosion(ast.x, ast.y, ast.color, ast.type === 'boss' ? 24 : 10);
-                            playExplosionSound(ast.type === 'boss');
-                            asteroids.splice(j, 1);
-                            game.asteroidsDefeated++;
-                            checkWaveProgress();
-                        }
-                        break;
-                    }
-                }
-
-                // Limpar projéteis fora de tela
-                if (b && (b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height)) {
-                    bullets.splice(i, 1);
-                }
-            }
-
-            // Asteroides
-            for (let ast of asteroids) {
-                ast.update(deltaTime);
-                ast.draw();
-            }
-
-            // Partículas de Impacto
-            for (let i = particles.length - 1; i >= 0; i--) {
-                let p = particles[i];
-                p.update();
-                p.draw();
-                if (p.life <= 0) particles.splice(i, 1);
-            }
-
-            updateUI();
-            requestAnimationFrame(gameLoop);
-        }
-
-        // Iniciar
-        updateUI();
-        requestAnimationFrame(gameLoop);
-    </script>
-</body>
-</html>
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    user-select: none;
+}
+
+body {
+    background-color: #0b0d17;
+    color: #e1e1e6;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* HUD Superior */
+#top-hud {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #151828;
+    padding: 8px 12px;
+    border-bottom: 2px solid #23283e;
+    gap: 6px;
+}
+
+.btn-hub {
+    color: #8257e5;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 0.85rem;
+    padding: 6px 10px;
+    border-radius: 6px;
+    background: #202438;
+}
+
+.hud-card {
+    background: #202438;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.hud-card.gold b {
+    color: #ffd700;
+}
+
+#btn-speed {
+    background: #00b4d8;
+    color: #000;
+    border: none;
+    padding: 6px 12px;
+    font-weight: bold;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+/* Área de Jogo */
+#game-container {
+    flex: 1;
+    position: relative;
+    background-color: #05060a;
+}
+
+canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* HUD Inferior - Loja */
+#bottom-hud {
+    background-color: #151828;
+    padding: 8px;
+    border-top: 2px solid #23283e;
+}
+
+.shop-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.btn-upgrade {
+    background-color: #00875f;
+    color: #fff;
+    border: none;
+    padding: 8px 4px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    text-align: center;
+}
+
+.btn-upgrade:disabled {
+    background-color: #29292e;
+    color: #7c7c8a;
+    cursor: not-allowed;
+}
+
+/* Modal */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.85);
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+}
+
+.modal-content {
+    background: #151828;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+    min-width: 280px;
+    border: 1px solid #23283e;
+}
+
+.modal-content ol {
+    margin: 15px 0;
+    text-align: left;
+    padding-left: 20px;
+}
+
+#btn-restart {
+    background: #8257e5;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+@media (max-width: 600px) {
+    .shop-grid { grid-template-columns: repeat(2, 1fr); }
+    .hud-card { font-size: 0.7rem; padding: 4px 6px; }
+}
