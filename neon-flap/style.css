@@ -44,11 +44,25 @@ body {
     border-bottom: 1px solid #334155;
 }
 
-.back-btn {
-    color: #38bdf8;
+/* --- Header do Jogo com Logo Clicável --- */
+.logo-link {
     text-decoration: none;
-    font-size: 0.9rem;
-    font-weight: 700;
+    color: inherit;
+    transition: transform 0.2s ease;
+}
+
+.logo-link:hover {
+    transform: scale(1.03);
+}
+
+.logo-link h1 {
+    font-size: 1.2rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+}
+
+.logo-link h1 span {
+    color: #3b82f6; /* Ou #ec4899 no Neon Flap */
 }
 
 .hud {
