@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space Defense - MegaHit Games</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Firebase App e Realtime Database / Firestore -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+</head>
+<body>
+
+    <!-- HUD SUPERIOR: Informações da Onda e Inimigos -->
+    <header id="top-hud">
+        <div class="hud-card">
+            <span>Onda: <b id="wave-num">1</b></span>
+        </div>
+        <div class="hud-card">
+            <span>HP Básico: <b id="ast-hp">10</b></span>
+        </div>
+        <div class="hud-card">
+            <span>Dano/s Inimigo: <b id="ast-dmg">2/s</b></span>
+        </div>
+        <div class="hud-card gold">
+            <span>Ouro: 🪙 <b id="gold-display">0</b></span>
+        </div>
+    </header>
+
+    <!-- TELA DO JOGO (CANVAS) -->
+    <main id="game-container">
+        <canvas id="gameCanvas"></canvas>
+    </main>
+
+    <!-- HUD INFERIOR: Loja de Melhorias -->
+    <footer id="bottom-hud">
+        <div class="shop-grid">
+            <button class="btn-upgrade" onclick="buyUpgrade('atkSpeed')">
+                <b>A velocidade Ataque</b><br>
+                Nv: <span id="lvl-atkSpeed">1</span> | Custo: 🪙<span id="cost-atkSpeed">15</span>
+            </button>
+            <button class="btn-upgrade" onclick="buyUpgrade('damage')">
+                <b>Dano</b><br>
+                Nv: <span id="lvl-damage">1</span> | Custo: 🪙<span id="cost-damage">10</span>
+            </button>
+            <button class="btn-upgrade" onclick="buyUpgrade('hp')">
+                <b>HP Máximo</b><br>
+                Nv: <span id="lvl-hp">1</span> | Custo: 🪙<span id="cost-hp">20</span>
+            </button>
+            <button class="btn-upgrade" onclick="buyUpgrade('hpRegen')">
+                <b>Regen HP/s</b><br>
+                Nv: <span id="lvl-hpRegen">0</span> | Custo: 🪙<span id="cost-hpRegen">25</span>
+            </button>
+            <button class="btn-upgrade" onclick="buyUpgrade('goldWave')">
+                <b>Bônus Onda</b><br>
+                Nv: <span id="lvl-goldWave">1</span> | Custo: 🪙<span id="cost-goldWave">30</span>
+            </button>
+            <button class="btn-upgrade" onclick="buyUpgrade('goldKill')">
+                <b>Bônus Abate</b><br>
+                Nv: <span id="lvl-goldKill">1</span> | Custo: 🪙<span id="cost-goldKill">40</span>
+            </button>
+        </div>
+    </footer>
+
+    <!-- RANKING TOP 10 -->
+    <aside id="ranking-modal" class="modal">
+        <div class="modal-content">
+            <h2>🏆 Top 10 Defensores</h2>
+            <ol id="ranking-list"></ol>
+            <button id="btn-restart" style="display:none;" onclick="resetGame()">Jogar Novamente</button>
+        </div>
+    </aside>
+
+    <script src="game.js"></script>
+</body>
+</html>
