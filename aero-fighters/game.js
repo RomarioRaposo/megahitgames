@@ -1,7 +1,7 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-// Elementos da UI
+// UI
 const scoreVal = document.getElementById('score-val');
 const livesVal = document.getElementById('lives-val');
 const overlayStart = document.getElementById('overlay-start');
@@ -14,16 +14,18 @@ const leaderboardList = document.getElementById('leaderboard-list');
 const startBtn = document.getElementById('start-btn');
 const restartBtn = document.getElementById('restart-btn');
 
-// Estado do Jogo
+// Estado de Execução
 let gameActive = false;
 let score = 0;
 let lives = 3;
-let frameCount = 0;
+let lastTime = 0;
+let shotTimer = 0;
 
-// Estado dos Controles Teclado (Desktop)
+// Delta Time (Normalizador de FPS)
+let dt = 0;
+
+// Controles
 const keys = { left: false, right: false, up: false, down: false };
-
-// Estado de Controle Touch (Arraste)
 let isTouching = false;
 let targetTouchX = null;
 let targetTouchY = null;
@@ -33,26 +35,29 @@ const stars = Array.from({ length: 60 }, () => ({
     x: Math.random() * canvas.width,
     y: Math.random() * canvas.height,
     size: Math.random() * 2 + 0.5,
-    speed: Math.random() * 3 + 1
+    speed: Math.random() * 120 + 40
 }));
 
-// Nave do Jogador
+// Jogador
 const player = {
     x: canvas.width / 2 - 16,
     y: canvas.height - 90,
     width: 32,
     height: 38,
-    speed: 5,
-    lastShot: 0
+    speed: 320,
+    weaponLevel: 1, // 1 a 4
+    hasShield: false
 };
 
+// Entidades
 let bullets = [];
 let enemyBullets = [];
 let enemies = [];
 let particles = [];
+let powerUps = [];
 let boss = null;
 
-// Eventos de Teclado (Desktop)
+// Listeners
 window.addEventListener('keydown', e => handleKey(e, true));
 window.addEventListener('keyup', e => handleKey(e, false));
 
@@ -63,7 +68,6 @@ function handleKey(e, isPressed) {
     if (e.key === 'ArrowDown' || e.key === 's') keys.down = isPressed;
 }
 
-// EVENTOS TOUCH DE ARRASTE (Mobile)
 canvas.addEventListener('touchstart', handleTouchMove, { passive: false });
 canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
 canvas.addEventListener('touchend', () => { isTouching = false; });
@@ -71,17 +75,13 @@ canvas.addEventListener('touchend', () => { isTouching = false; });
 function handleTouchMove(e) {
     e.preventDefault();
     if (!gameActive) return;
-
     const rect = canvas.getBoundingClientRect();
     const touch = e.touches[0];
-
-    // Calcula a posição do toque relativa ao tamanho do Canvas
     targetTouchX = (touch.clientX - rect.left) * (canvas.width / rect.width) - player.width / 2;
     targetTouchY = (touch.clientY - rect.top) * (canvas.height / rect.height) - player.height / 2;
     isTouching = true;
 }
 
-// Início / Restart / Ranking
 startBtn.addEventListener('click', startGame);
 restartBtn.addEventListener('click', startGame);
 saveScoreBtn.addEventListener('click', saveRankingScore);
@@ -93,9 +93,13 @@ function startGame() {
     enemyBullets = [];
     enemies = [];
     particles = [];
+    powerUps = [];
     boss = null;
+    
     player.x = canvas.width / 2 - 16;
     player.y = canvas.height - 90;
+    player.weaponLevel = 1;
+    player.hasShield = false;
 
     scoreVal.textContent = score;
     livesVal.textContent = lives;
@@ -103,6 +107,7 @@ function startGame() {
     overlayStart.style.display = 'none';
     overlayGameOver.style.display = 'none';
     gameActive = true;
+    lastTime = performance.now();
     requestAnimationFrame(gameLoop);
 }
 
@@ -117,33 +122,24 @@ function gameOver(won = false) {
     renderLeaderboard();
 }
 
-// Sistema de Ranking (LocalStorage)
+// LocalStorage Ranking
 function getLeaderboard() {
     return JSON.parse(localStorage.getItem('megahit_aerofighters_ranks') || '[]');
 }
 
 function saveRankingScore() {
-    const nick = playerNickInput.value.trim() || 'Piloto Anônimo';
+    const nick = playerNickInput.value.trim() || 'Piloto';
     const ranks = getLeaderboard();
-
     ranks.push({ nick, score });
     ranks.sort((a, b) => b.score - a.score);
-    const top10 = ranks.slice(0, 10);
-
-    localStorage.setItem('megahit_aerofighters_ranks', JSON.stringify(top10));
+    localStorage.setItem('megahit_aerofighters_ranks', JSON.stringify(ranks.slice(0, 10)));
     document.getElementById('nick-form').style.display = 'none';
     renderLeaderboard();
 }
 
 function renderLeaderboard() {
     const ranks = getLeaderboard();
-    leaderboardList.innerHTML = '';
-
-    if (ranks.length === 0) {
-        leaderboardList.innerHTML = '<li>Nenhum registro ainda.</li>';
-        return;
-    }
-
+    leaderboardList.innerHTML = ranks.length === 0 ? '<li>Sem registros.</li>' : '';
     ranks.forEach(item => {
         const li = document.createElement('li');
         li.innerHTML = `<strong>${item.nick}</strong>: ${item.score} pts`;
@@ -151,9 +147,13 @@ function renderLeaderboard() {
     });
 }
 
-// Loop Principal
-function gameLoop() {
+// LOOP PRINCIPAL (Com Delta Time)
+function gameLoop(now) {
     if (!gameActive) return;
+
+    dt = (now - lastTime) / 1000; // Converte para segundos
+    if (dt > 0.1) dt = 0.1; // Trava para evitar grandes saltos de lag
+    lastTime = now;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -163,6 +163,7 @@ function gameLoop() {
     spawnEnemies();
     updateEnemies();
     updateBoss();
+    updatePowerUps();
     updateParticles();
     checkCollisions();
 
@@ -171,133 +172,191 @@ function gameLoop() {
     drawBullets();
     drawEnemies();
     drawBoss();
+    drawPowerUps();
     drawParticles();
 
-    frameCount++;
     requestAnimationFrame(gameLoop);
 }
 
-// Lógica de Movimentação do Jogador
-function updatePlayer() {
-    // 1. Movimentação via Touch (Arraste)
-    if (isTouching && targetTouchX !== null && targetTouchY !== null) {
-        // Interpolação (Lerp) para a nave seguir o dedo de forma suave
-        player.x += (targetTouchX - player.x) * 0.2;
-        player.y += (targetTouchY - player.y) * 0.2;
-    }
-
-    // 2. Movimentação via Teclado (Desktop)
-    if (keys.left && player.x > 0) player.x -= player.speed;
-    if (keys.right && player.x < canvas.width - player.width) player.x += player.speed;
-    if (keys.up && player.y > 0) player.y -= player.speed;
-    if (keys.down && player.y < canvas.height - player.height) player.y += player.speed;
-
-    // Trava de limites da tela
-    player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
-    player.y = Math.max(0, Math.min(canvas.height - player.height, player.y));
-
-    // TIRO AUTOMÁTICO
-    if (frameCount - player.lastShot > 8) {
-        bullets.push({ x: player.x + 6, y: player.y, speed: 10 });
-        bullets.push({ x: player.x + player.width - 10, y: player.y, speed: 10 });
-        player.lastShot = frameCount;
-    }
-}
-
+// ATUALIZAÇÕES COM FÍSICA INDEPENDENTE DE FPS
 function updateBackground() {
     stars.forEach(s => {
-        s.y += s.speed;
+        s.y += s.speed * dt;
         if (s.y > canvas.height) s.y = 0;
     });
 }
 
+function updatePlayer() {
+    if (isTouching && targetTouchX !== null && targetTouchY !== null) {
+        player.x += (targetTouchX - player.x) * (15 * dt);
+        player.y += (targetTouchY - player.y) * (15 * dt);
+    }
+
+    if (keys.left) player.x -= player.speed * dt;
+    if (keys.right) player.x += player.speed * dt;
+    if (keys.up) player.y -= player.speed * dt;
+    if (keys.down) player.y += player.speed * dt;
+
+    player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
+    player.y = Math.max(0, Math.min(canvas.height - player.height, player.y));
+
+    // Tiro Automático Adaptativo por Nível de Upgrade
+    shotTimer += dt;
+    const fireInterval = player.weaponLevel === 4 ? 0.09 : 0.13;
+
+    if (shotTimer >= fireInterval) {
+        fireWeapon();
+        shotTimer = 0;
+    }
+}
+
+function fireWeapon() {
+    const pX = player.x + player.width / 2;
+    const pY = player.y;
+
+    if (player.weaponLevel === 1) {
+        bullets.push({ x: pX - 8, y: pY, vx: 0, vy: -600, w: 4, h: 12, color: '#38bdf8' });
+        bullets.push({ x: pX + 4, y: pY, vx: 0, vy: -600, w: 4, h: 12, color: '#38bdf8' });
+    } else if (player.weaponLevel === 2) {
+        bullets.push({ x: pX - 10, y: pY, vx: -80, vy: -580, w: 4, h: 12, color: '#38bdf8' });
+        bullets.push({ x: pX - 2, y: pY, vx: 0, vy: -600, w: 4, h: 12, color: '#38bdf8' });
+        bullets.push({ x: pX + 6, y: pY, vx: 80, vy: -580, w: 4, h: 12, color: '#38bdf8' });
+    } else if (player.weaponLevel === 3) {
+        bullets.push({ x: pX - 12, y: pY, vx: -120, vy: -560, w: 5, h: 14, color: '#f59e0b' });
+        bullets.push({ x: pX - 4, y: pY, vx: -40, vy: -600, w: 5, h: 14, color: '#f59e0b' });
+        bullets.push({ x: pX + 4, y: pY, vx: 40, vy: -600, w: 5, h: 14, color: '#f59e0b' });
+        bullets.push({ x: pX + 12, y: pY, vx: 120, vy: -560, w: 5, h: 14, color: '#f59e0b' });
+    } else { // Nível 4 (Plasma)
+        bullets.push({ x: pX - 16, y: pY, vx: -160, vy: -620, w: 6, h: 16, color: '#a855f7' });
+        bullets.push({ x: pX - 6, y: pY, vx: 0, vy: -650, w: 8, h: 18, color: '#ec4899' });
+        bullets.push({ x: pX + 2, y: pY, vx: 0, vy: -650, w: 8, h: 18, color: '#ec4899' });
+        bullets.push({ x: pX + 10, y: pY, vx: 160, vy: -620, w: 6, h: 16, color: '#a855f7' });
+    }
+}
+
 function updateBullets() {
     bullets.forEach((b, i) => {
-        b.y -= b.speed;
-        if (b.y < 0) bullets.splice(i, 1);
+        b.x += b.vx * dt;
+        b.y += b.vy * dt;
+        if (b.y < -20 || b.x < -20 || b.x > canvas.width + 20) bullets.splice(i, 1);
     });
 
     enemyBullets.forEach((eb, i) => {
-        eb.x += eb.vx || 0;
-        eb.y += eb.vy || 4;
-        if (eb.y > canvas.height || eb.x < 0 || eb.x > canvas.width) enemyBullets.splice(i, 1);
+        eb.x += eb.vx * dt;
+        eb.y += eb.vy * dt;
+        if (eb.y > canvas.height + 20 || eb.x < -20 || eb.x > canvas.width + 20) enemyBullets.splice(i, 1);
     });
 }
 
 function spawnEnemies() {
-    if (!boss && frameCount % 45 === 0) {
+    if (!boss && Math.random() < 0.03) {
         enemies.push({
             x: Math.random() * (canvas.width - 32),
-            y: -35,
+            y: -40,
             width: 32,
             height: 32,
-            speed: Math.random() * 2 + 2,
+            speed: Math.random() * 80 + 100,
             hp: 3
         });
     }
 
-    if (score >= 1000 && !boss) {
+    if (score >= 1200 && !boss) {
         boss = {
             x: canvas.width / 2 - 60,
             y: -100,
             width: 120,
             height: 70,
-            hp: 100,
-            maxHp: 100,
-            dx: 2.5
+            hp: 120,
+            maxHp: 120,
+            dx: 120
         };
     }
 }
 
 function updateEnemies() {
     enemies.forEach((e, i) => {
-        e.y += e.speed;
-        if (Math.random() < 0.015) {
-            enemyBullets.push({ x: e.x + e.width / 2, y: e.y + e.height });
+        e.y += e.speed * dt;
+        if (Math.random() < 0.01) {
+            enemyBullets.push({ x: e.x + e.width / 2, y: e.y + e.height, vx: 0, vy: 220 });
         }
-        if (e.y > canvas.height) enemies.splice(i, 1);
+        if (e.y > canvas.height + 40) enemies.splice(i, 1);
     });
 }
 
 function updateBoss() {
     if (!boss) return;
 
-    if (boss.y < 45) boss.y += 1.5;
+    if (boss.y < 45) boss.y += 40 * dt;
     else {
-        boss.x += boss.dx;
+        boss.x += boss.dx * dt;
         if (boss.x <= 0 || boss.x >= canvas.width - boss.width) boss.dx *= -1;
 
-        if (frameCount % 35 === 0) {
+        if (Math.random() < 0.04) {
             for (let angle = -0.6; angle <= 0.6; angle += 0.3) {
                 enemyBullets.push({
                     x: boss.x + boss.width / 2,
                     y: boss.y + boss.height,
-                    vx: angle * 3,
-                    vy: 4
+                    vx: angle * 180,
+                    vy: 200
                 });
             }
         }
     }
 }
 
+// Power-Ups (Upgrades em Queda)
+function spawnPowerUp(x, y) {
+    if (Math.random() < 0.25) { // 25% de chance
+        const types = ['P', 'P', 'S', 'B']; // P maior probabilidade
+        const type = types[Math.floor(Math.random() * types.length)];
+        powerUps.push({ x, y, type, speed: 90 });
+    }
+}
+
+function updatePowerUps() {
+    powerUps.forEach((p, i) => {
+        p.y += p.speed * dt;
+
+        // Coleta do Power-Up
+        if (p.x < player.x + player.width && p.x + 20 > player.x &&
+            p.y < player.y + player.height && p.y + 20 > player.y) {
+            
+            if (p.type === 'P' && player.weaponLevel < 4) player.weaponLevel++;
+            if (p.type === 'S') player.hasShield = true;
+            if (p.type === 'B') { // Bomb: Limpa a tela
+                enemies.forEach(e => createExplosion(e.x + e.width / 2, e.y + e.height / 2, '#10b981'));
+                enemies = [];
+                enemyBullets = [];
+                score += 150;
+                scoreVal.textContent = score;
+            }
+
+            createExplosion(p.x, p.y, '#3b82f6');
+            powerUps.splice(i, 1);
+        } else if (p.y > canvas.height + 20) {
+            powerUps.splice(i, 1);
+        }
+    });
+}
+
 function createExplosion(x, y, color = '#f59e0b') {
-    for (let i = 0; i < 18; i++) {
+    for (let i = 0; i < 16; i++) {
         particles.push({
             x, y,
-            vx: (Math.random() - 0.5) * 7,
-            vy: (Math.random() - 0.5) * 7,
+            vx: (Math.random() - 0.5) * 300,
+            vy: (Math.random() - 0.5) * 300,
             size: Math.random() * 4 + 2,
             color,
-            life: 22
+            life: 0.35
         });
     }
 }
 
 function updateParticles() {
     particles.forEach((p, i) => {
-        p.x += p.vx;
-        p.y += p.vy;
-        p.life--;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.life -= dt;
         if (p.life <= 0) particles.splice(i, 1);
     });
 }
@@ -305,11 +364,12 @@ function updateParticles() {
 function checkCollisions() {
     bullets.forEach((b, bi) => {
         enemies.forEach((e, ei) => {
-            if (b.x < e.x + e.width && b.x + 4 > e.x && b.y < e.y + e.height && b.y + 10 > e.y) {
+            if (b.x < e.x + e.width && b.x + b.w > e.x && b.y < e.y + e.height && b.y + b.h > e.y) {
                 e.hp--;
                 bullets.splice(bi, 1);
                 if (e.hp <= 0) {
                     createExplosion(e.x + e.width / 2, e.y + e.height / 2, '#10b981');
+                    spawnPowerUp(e.x + e.width / 2, e.y + e.height / 2);
                     enemies.splice(ei, 1);
                     score += 50;
                     scoreVal.textContent = score;
@@ -317,7 +377,7 @@ function checkCollisions() {
             }
         });
 
-        if (boss && b.x < boss.x + boss.width && b.x + 4 > boss.x && b.y < boss.y + boss.height && b.y + 10 > boss.y) {
+        if (boss && b.x < boss.x + boss.width && b.x + b.w > boss.x && b.y < boss.y + boss.height && b.y + b.h > boss.y) {
             boss.hp--;
             bullets.splice(bi, 1);
             createExplosion(b.x, b.y, '#3b82f6');
@@ -347,21 +407,37 @@ function checkCollisions() {
 }
 
 function hitPlayer() {
+    if (player.hasShield) {
+        player.hasShield = false;
+        createExplosion(player.x + player.width / 2, player.y + player.height / 2, '#38bdf8');
+        return;
+    }
+
     lives--;
     livesVal.textContent = lives;
-    createExplosion(player.x + player.width / 2, player.y + player.height / 2, '#3b82f6');
-    if (lives <= 0) {
-        gameOver(false);
-    }
+    if (player.weaponLevel > 1) player.weaponLevel--; // Reduz nível de arma ao tomar dano
+    createExplosion(player.x + player.width / 2, player.y + player.height / 2, '#ef4444');
+    
+    if (lives <= 0) gameOver(false);
 }
 
-// Renderização
+// RENDERIZAÇÃO
 function drawBackground() {
     ctx.fillStyle = '#ffffff';
     stars.forEach(s => ctx.fillRect(s.x, s.y, s.size, s.size));
 }
 
 function drawPlayer() {
+    // Escudo Energético (Se Ativo)
+    if (player.hasShield) {
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(player.x + player.width / 2, player.y + player.height / 2, 26, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+
+    // Nave Delta
     ctx.fillStyle = '#2563eb';
     ctx.beginPath();
     ctx.moveTo(player.x + player.width / 2, player.y);
@@ -371,16 +447,20 @@ function drawPlayer() {
     ctx.closePath();
     ctx.fill();
 
+    // Cockpit
     ctx.fillStyle = '#38bdf8';
     ctx.fillRect(player.x + player.width / 2 - 3, player.y + 10, 6, 12);
 
+    // Propulsor
     ctx.fillStyle = '#f59e0b';
     ctx.fillRect(player.x + player.width / 2 - 4, player.y + player.height - 2, 8, 8 + Math.random() * 4);
 }
 
 function drawBullets() {
-    ctx.fillStyle = '#38bdf8';
-    bullets.forEach(b => ctx.fillRect(b.x, b.y, 4, 12));
+    bullets.forEach(b => {
+        ctx.fillStyle = b.color;
+        ctx.fillRect(b.x, b.y, b.w, b.h);
+    });
 
     ctx.fillStyle = '#ef4444';
     enemyBullets.forEach(eb => ctx.fillRect(eb.x - 2, eb.y, 5, 5));
@@ -400,7 +480,6 @@ function drawEnemies() {
 
 function drawBoss() {
     if (!boss) return;
-
     ctx.fillStyle = '#ef4444';
     ctx.fillRect(boss.x, boss.y, boss.width, boss.height);
 
@@ -408,6 +487,19 @@ function drawBoss() {
     ctx.fillRect(boss.x, boss.y - 14, boss.width, 8);
     ctx.fillStyle = '#10b981';
     ctx.fillRect(boss.x, boss.y - 14, (boss.hp / boss.maxHp) * boss.width, 8);
+}
+
+function drawPowerUps() {
+    powerUps.forEach(p => {
+        ctx.fillStyle = p.type === 'P' ? '#3b82f6' : (p.type === 'S' ? '#38bdf8' : '#ef4444');
+        ctx.fillRect(p.x - 10, p.y - 10, 20, 20);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(p.type, p.x, p.y);
+    });
 }
 
 function drawParticles() {
