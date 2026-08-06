@@ -3,11 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>BANG! The Dice Game - MegaHit Games</title>
+  <title>BANG! The Raposo Game - MegaHit Games</title>
   <style>
-    /* ==========================================================================
-       1. VARIÁVEIS E TEMAS (Clean Light & Dark Mode)
-       ========================================================================== */
     :root {
       --bg-color: #f8fafc;
       --card-bg: #ffffff;
@@ -19,7 +16,7 @@
       --secondary-color: #475569;
       --success-color: #16a34a;
       --danger-color: #dc2626;
-      --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
     }
 
     body.dark-theme {
@@ -31,16 +28,7 @@
       --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.5);
     }
 
-    /* ==========================================================================
-       2. RESET E ESTILOS BASE
-       ========================================================================== */
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      -webkit-tap-highlight-color: transparent;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
 
     body {
       background-color: var(--bg-color);
@@ -48,12 +36,8 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      transition: background-color 0.3s ease, color 0.3s ease;
     }
 
-    /* ==========================================================================
-       3. HEADER E NAVEGAÇÃO
-       ========================================================================== */
     header {
       display: flex;
       justify-content: space-between;
@@ -64,255 +48,81 @@
       box-shadow: var(--shadow);
     }
 
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
-
-    .back-btn {
-      color: var(--primary-color);
-      text-decoration: none;
-      font-weight: 700;
-      font-size: 0.9rem;
-      display: flex;
-      align-items: center;
-      gap: 0.25rem;
-    }
-
-    .back-btn:hover { text-decoration: underline; }
-
-    h1 {
-      font-size: 1.25rem;
-      font-weight: 800;
-      letter-spacing: -0.025em;
-    }
+    .brand { display: flex; align-items: center; gap: 1rem; }
+    .back-btn { color: var(--primary-color); text-decoration: none; font-weight: 700; font-size: 0.9rem; }
+    h1 { font-size: 1.2rem; font-weight: 800; }
 
     .theme-btn {
-      background: transparent;
-      border: 1px solid var(--border-color);
-      color: var(--text-color);
-      padding: 0.5rem 0.75rem;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 0.875rem;
-      font-weight: 600;
-      transition: all 0.2s;
+      background: transparent; border: 1px solid var(--border-color);
+      color: var(--text-color); padding: 0.5rem 0.75rem; border-radius: 8px; cursor: pointer;
     }
 
-    .theme-btn:hover {
-      background-color: var(--border-color);
-    }
-
-    /* ==========================================================================
-       4. ESTRUTURA DO JOGO E CONTAINERS
-       ========================================================================== */
-    main {
-      flex: 1;
-      max-width: 900px;
-      width: 100%;
-      margin: 1.5rem auto;
-      padding: 0 1rem;
-    }
-
-    .card {
-      background-color: var(--card-bg);
-      border: 1px solid var(--border-color);
-      border-radius: 16px;
-      padding: 1.5rem;
-      box-shadow: var(--shadow);
-    }
-
+    main { flex: 1; max-width: 950px; width: 100%; margin: 1rem auto; padding: 0 1rem; }
+    .card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 1.25rem; box-shadow: var(--shadow); }
     .hidden { display: none !important; }
 
-    /* ==========================================================================
-       5. TELA DE LOBBY
-       ========================================================================== */
-    .lobby-header {
-      text-align: center;
-      margin-bottom: 1.5rem;
-    }
+    /* LOBBY */
+    .form-group { display: flex; flex-direction: column; gap: 1rem; max-width: 400px; margin: 1rem auto; }
+    input { width: 100%; padding: 0.85rem; border: 1px solid var(--border-color); border-radius: 10px; background: transparent; color: var(--text-color); font-size: 1rem; }
+    .actions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 
-    .lobby-header p {
-      color: var(--text-muted);
-      font-size: 0.95rem;
-      margin-top: 0.25rem;
-    }
+    .btn { padding: 0.85rem; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+    .btn-primary { background-color: var(--primary-color); color: #fff; }
+    .btn-secondary { background-color: var(--secondary-color); color: #fff; }
+    .btn-success { background-color: var(--success-color); color: #fff; }
+    .btn-danger { background-color: var(--danger-color); color: #fff; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-      max-width: 400px;
-      margin: 0 auto;
-    }
+    /* MESA E JOGADORES */
+    .status-bar { display: flex; justify-content: space-between; align-items: center; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border-color); margin-bottom: 1rem; }
+    .badge { background: var(--border-color); padding: 0.25rem 0.5rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; }
 
-    input {
-      width: 100%;
-      padding: 0.875rem 1rem;
-      border: 1px solid var(--border-color);
-      border-radius: 10px;
-      background-color: transparent;
-      color: var(--text-color);
-      font-size: 1rem;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-
-    input:focus {
-      border-color: var(--primary-color);
-    }
-
-    .actions-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.75rem;
-    }
-
-    .btn {
-      padding: 0.875rem 1rem;
-      border: none;
-      border-radius: 10px;
-      font-weight: 700;
-      font-size: 0.95rem;
-      cursor: pointer;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-    }
-
-    .btn-primary { background-color: var(--primary-color); color: #ffffff; }
-    .btn-primary:hover { background-color: var(--primary-hover); }
-
-    .btn-secondary { background-color: var(--secondary-color); color: #ffffff; }
-    .btn-secondary:hover { opacity: 0.9; }
-
-    .btn-success { background-color: var(--success-color); color: #ffffff; }
-    .btn-success:hover { opacity: 0.9; }
-
-    .btn:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-
-    /* ==========================================================================
-       6. TELA MESA DE JOGO (GAME BOARD)
-       ========================================================================== */
-    .status-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding-bottom: 1rem;
-      border-bottom: 1px solid var(--border-color);
-      margin-bottom: 1rem;
-      font-size: 0.9rem;
-    }
-
-    .badge {
-      background-color: var(--border-color);
-      padding: 0.25rem 0.5rem;
-      border-radius: 6px;
-      font-weight: 700;
-    }
-
-    /* Grid de Jogadores */
-    .players-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-      gap: 0.75rem;
-      margin-bottom: 1.5rem;
-    }
-
+    .players-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.75rem; margin-bottom: 1rem; }
+    
     .player-card {
-      border: 2px solid var(--border-color);
-      border-radius: 12px;
-      padding: 0.75rem;
-      text-align: center;
-      background: var(--card-bg);
-      position: relative;
-      transition: all 0.2s;
+      border: 2px solid var(--border-color); border-radius: 12px; padding: 0.75rem; text-align: center;
+      background: var(--card-bg); position: relative; transition: all 0.2s; cursor: pointer;
     }
+    .player-card.active-turn { border-color: var(--primary-color); box-shadow: 0 0 12px rgba(217, 119, 6, 0.4); }
+    .player-card.is-me { background-color: rgba(217, 119, 6, 0.08); }
+    .player-card.selectable-target { border-color: var(--success-color); animation: pulse 1.2s infinite; }
+    .player-card.dead { opacity: 0.4; filter: grayscale(100%); }
 
-    .player-card.active-turn {
-      border-color: var(--primary-color);
-      box-shadow: 0 0 12px rgba(217, 119, 6, 0.3);
-      transform: translateY(-2px);
+    @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
+
+    .player-name { font-weight: 700; font-size: 0.9rem; }
+    .player-char { font-size: 0.75rem; color: var(--primary-color); font-weight: 600; }
+    .player-role { font-size: 0.75rem; color: var(--text-muted); }
+    .player-stats { display: flex; justify-content: space-around; margin-top: 0.5rem; font-size: 0.85rem; font-weight: 800; }
+
+    /* RESERVA DE FLECHAS */
+    .arrow-bank { text-align: center; background: rgba(220, 38, 38, 0.1); border: 1px dashed var(--danger-color); padding: 0.5rem; border-radius: 10px; margin-bottom: 1rem; font-weight: 700; }
+
+    /* LEGENDA DE DADOS */
+    .legend-box {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.5rem;
+      background: var(--bg-color); border: 1px solid var(--border-color); padding: 0.75rem; border-radius: 10px; margin-bottom: 1rem; font-size: 0.75rem;
     }
+    .legend-item { display: flex; align-items: center; gap: 0.4rem; }
 
-    .player-card.is-me {
-      background-color: rgba(217, 119, 6, 0.05);
-    }
-
-    .player-name {
-      font-weight: 700;
-      font-size: 0.9rem;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .player-role {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      margin: 0.25rem 0;
-    }
-
-    .player-hp {
-      font-size: 0.85rem;
-      font-weight: 800;
-      color: var(--danger-color);
-    }
-
-    /* Área de Dados */
-    .dice-area {
-      background-color: var(--bg-color);
-      border-radius: 12px;
-      padding: 1rem;
-      text-align: center;
-    }
-
-    .dice-container {
-      display: flex;
-      justify-content: center;
-      gap: 0.5rem;
-      margin: 1rem 0;
-      flex-wrap: wrap;
-    }
-
+    /* DADOS E AÇÕES */
+    .dice-area { background-color: var(--bg-color); border-radius: 12px; padding: 1rem; text-align: center; }
+    .dice-container { display: flex; justify-content: center; gap: 0.5rem; margin: 1rem 0; flex-wrap: wrap; }
+    
     .die {
-      width: 50px;
-      height: 50px;
-      background-color: var(--card-bg);
-      border: 2px solid var(--primary-color);
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.2rem;
-      font-weight: bold;
-      box-shadow: var(--shadow);
-      user-select: none;
+      width: 52px; height: 52px; background-color: var(--card-bg); border: 2px solid var(--primary-color);
+      border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem;
+      font-weight: bold; cursor: pointer; user-select: none; transition: 0.2s;
     }
+    .die.kept { border-color: var(--success-color); background-color: rgba(22, 163, 74, 0.15); }
+    .die.locked { border-color: var(--danger-color); cursor: not-allowed; opacity: 0.8; }
 
-    .turn-message {
-      font-weight: 700;
-      margin-bottom: 1rem;
-      min-height: 1.5em;
-    }
-
-    .game-controls {
-      display: flex;
-      gap: 0.75rem;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
+    .controls-row { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; margin-top: 0.75rem; }
+    .log-box { margin-top: 1rem; max-height: 100px; overflow-y: auto; text-align: left; background: var(--card-bg); padding: 0.5rem; border-radius: 8px; border: 1px solid var(--border-color); font-size: 0.8rem; }
   </style>
 </head>
 <body class="dark-theme">
 
-  <!-- HEADER -->
   <header>
     <div class="brand">
       <a href="../index.html" class="back-btn">← Hub</a>
@@ -321,13 +131,12 @@
     <button id="theme-toggle" class="theme-btn">🌓 Tema</button>
   </header>
 
-  <!-- CONTEÚDO PRINCIPAL -->
   <main>
-    <!-- LOBBY SCREEN -->
+    <!-- LOBBY -->
     <section id="lobby-screen" class="card">
-      <div class="lobby-header">
+      <div style="text-align:center; margin-bottom: 1rem;">
         <h2>Entrar na Mesa</h2>
-        <p>Jogue em tempo real com 2 a 8 amigos</p>
+        <p style="color:var(--text-muted); font-size:0.9rem;">Multiplayer online ou Solo com Bots (2 a 8 Jogadores)</p>
       </div>
       
       <div class="form-group">
@@ -345,39 +154,50 @@
     <section id="game-screen" class="card hidden">
       <div class="status-bar">
         <div>Sala: <span id="display-room-code" class="badge">---</span></div>
-        <div>Sua Função: <span id="display-role" class="badge">???</span></div>
+        <div>Função: <span id="display-role" class="badge">???</span></div>
       </div>
 
-      <!-- GRID DE JOGADORES NA MESA -->
+      <!-- BANCO DE FLECHAS -->
+      <div class="arrow-bank">
+        🏹 Flechas na Reserva: <span id="arrow-count">9</span> / 9
+      </div>
+
+      <!-- TABULEIRO DE JOGADORES -->
       <div id="players-board" class="players-grid"></div>
 
-      <!-- ÁREA DE INTERAÇÃO COM DADOS -->
+      <!-- LEGENDA DOS DADOS -->
+      <div class="legend-box">
+        <div class="legend-item">🎯1 : Ataca dist. 1</div>
+        <div class="legend-item">🎯2 : Ataca dist. 2</div>
+        <div class="legend-item">🍺 : Cura +1 PV</div>
+        <div class="legend-item">🏹 : Pega 1 Flecha</div>
+        <div class="legend-item">💣 : 3x Perde 1 PV</div>
+        <div class="legend-item">🔫 : 3x Dano Geral</div>
+      </div>
+
+      <!-- ÁREA DOS DADOS -->
       <div class="dice-area">
-        <p id="turn-status" class="turn-message">Aguardando início...</p>
+        <p id="turn-status" style="font-weight:700; min-height:1.2em;">Aguardando início...</p>
 
-        <div id="dice-container" class="dice-container">
-          <div class="die">-</div>
-          <div class="die">-</div>
-          <div class="die">-</div>
-          <div class="die">-</div>
-          <div class="die">-</div>
+        <div id="dice-container" class="dice-container"></div>
+
+        <div class="controls-row">
+          <button id="btn-add-bot" class="btn btn-secondary hidden">🤖 + Add Bot</button>
+          <button id="btn-start" class="btn btn-success hidden">🚀 Iniciar Partida</button>
+          <button id="btn-roll" class="btn btn-primary" disabled>🎲 Rolar (<span id="rolls-left">3</span>)</button>
+          <button id="btn-resolve" class="btn btn-danger hidden">⚡ Resolver Ações</button>
+          <button id="btn-end" class="btn btn-secondary" disabled>Passar Turno</button>
         </div>
 
-        <div class="game-controls">
-          <button id="btn-start" class="btn btn-success hidden">Iniciar Partida</button>
-          <button id="btn-roll" class="btn btn-primary" disabled>🎲 Rolar Dados (<span id="rolls-left">3</span>)</button>
-          <button id="btn-end" class="btn btn-secondary" disabled>Passar Vez</button>
-        </div>
+        <div id="game-log" class="log-box"></div>
       </div>
     </section>
   </main>
 
-  <!-- FIREBASE REALTIME DATABASE SDK (Modular via CDN ES6) -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getDatabase, ref, set, update, onValue, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-    // 1. CREDENCIAIS CONFIGUREDAS
     const firebaseConfig = {
       apiKey: "AIzaSyCvhEL3kMRMYhPK55tcICbLsWFHd45WgB8",
       authDomain: "megahit-games.firebaseapp.com",
@@ -388,159 +208,174 @@
       appId: "1:595034446210:web:01f430b992d529988cd79b"
     };
 
-    // Inicialização do Firebase
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // Estado da Aplicação
+    // Lista Oficial de Personagens e Habilidades
+    const CHARACTERS = [
+      { name: "Bart Cassidy", maxHp: 4 },
+      { name: "Paul Regret", maxHp: 3 },
+      { name: "Calamity Janet", maxHp: 4 },
+      { name: "El Gringo", maxHp: 3 },
+      { name: "Slab the Killer", maxHp: 4 },
+      { name: "Pedro Ramirez", maxHp: 4 },
+      { name: "Vulture Sam", maxHp: 4 },
+      { name: "Suzy Lafayette", maxHp: 4 }
+    ];
+
     let localPlayerId = "p_" + Math.random().toString(36).substring(2, 7);
     let currentRoomCode = null;
+    let keptDiceIndices = [];
+    let currentSelectionMode = null; // 'attack1', 'attack2', 'beer'
 
     // Elementos DOM
     const lobbyScreen = document.getElementById("lobby-screen");
     const gameScreen = document.getElementById("game-screen");
     const btnCreate = document.getElementById("btn-create");
     const btnJoin = document.getElementById("btn-join");
+    const btnAddBot = document.getElementById("btn-add-bot");
     const btnStart = document.getElementById("btn-start");
     const btnRoll = document.getElementById("btn-roll");
+    const btnResolve = document.getElementById("btn-resolve");
     const btnEnd = document.getElementById("btn-end");
-    const themeToggle = document.getElementById("theme-toggle");
 
-    // Alternador de Tema Claro/Escuro
-    themeToggle.addEventListener("click", () => {
-      document.body.classList.toggle("dark-theme");
-    });
+    document.getElementById("theme-toggle").addEventListener("click", () => document.body.classList.toggle("dark-theme"));
 
-    // Entrar ou Criar Sala
-    btnCreate.addEventListener("click", () => handleRoomAccess(true));
-    btnJoin.addEventListener("click", () => handleRoomAccess(false));
+    btnCreate.addEventListener("click", () => accessRoom(true));
+    btnJoin.addEventListener("click", () => accessRoom(false));
 
-    async function handleRoomAccess(isHost) {
+    async function accessRoom(isHost) {
       const name = document.getElementById("player-name").value.trim() || "Pistoleiro";
       const code = document.getElementById("room-code").value.trim().toUpperCase();
+      if (!code) return alert("Digite o código da sala!");
 
-      if (!code) return alert("Por favor, digite um código de sala!");
       currentRoomCode = code;
-
       const roomRef = ref(db, `rooms/${code}`);
       const snapshot = await get(roomRef);
 
       if (isHost) {
-        if (snapshot.exists()) return alert("Essa sala já foi criada! Escolha outro código ou entre nela.");
-
-        const initialData = {
-          status: "waiting",
-          host: localPlayerId,
-          turnIndex: 0,
-          playerOrder: [localPlayerId],
-          rollsLeft: 3,
-          diceResults: ["-", "-", "-", "-", "-"],
-          players: {
-            [localPlayerId]: { name, hp: 4, maxHp: 4, role: "Aguardando", alive: true }
-          }
-        };
-
-        await set(roomRef, initialData);
+        if (snapshot.exists()) return alert("Sala já existe!");
+        await set(roomRef, {
+          status: "waiting", host: localPlayerId, turnIndex: 0, playerOrder: [localPlayerId],
+          rollsLeft: 3, diceResults: ["-", "-", "-", "-", "-"], arrowPool: 9,
+          players: { [localPlayerId]: { name, hp: 4, maxHp: 4, arrows: 0, role: "Aguardando", isBot: false, alive: true } }
+        });
       } else {
-        if (!snapshot.exists()) return alert("Sala não encontrada! Verifique o código.");
-        
+        if (!snapshot.exists()) return alert("Sala não encontrada!");
         const data = snapshot.val();
-        if (Object.keys(data.players || {}).length >= 8) return alert("Mesa cheia! Máximo 8 jogadores.");
+        if (Object.keys(data.players || {}).length >= 8) return alert("Mesa cheia!");
 
         await update(ref(db, `rooms/${code}/players/${localPlayerId}`), {
-          name, hp: 4, maxHp: 4, role: "Aguardando", alive: true
+          name, hp: 4, maxHp: 4, arrows: 0, role: "Aguardando", isBot: false, alive: true
         });
-
-        const newOrder = [...(data.playerOrder || []), localPlayerId];
-        await update(ref(db, `rooms/${code}`), { playerOrder: newOrder });
+        await update(ref(db, `rooms/${code}`), { playerOrder: [...(data.playerOrder || []), localPlayerId] });
       }
 
-      // Transição de Telas
       lobbyScreen.classList.add("hidden");
       gameScreen.classList.remove("hidden");
       document.getElementById("display-room-code").innerText = code;
-
-      // Iniciar Ouvinte em Tempo Real
-      listenToRoom();
+      listenRoom();
     }
 
-    // Listener Realtime
-    function listenToRoom() {
+    // Adicionar Bot na Mesa
+    btnAddBot.addEventListener("click", async () => {
       const roomRef = ref(db, `rooms/${currentRoomCode}`);
+      const snapshot = await get(roomRef);
+      const data = snapshot.val();
+      const count = Object.keys(data.players || {}).length;
+      if (count >= 8) return alert("Máximo de 8 jogadores alcançado!");
 
-      onValue(roomRef, (snapshot) => {
-        const data = snapshot.val();
-        if (!data) return;
+      const botId = "bot_" + Math.random().toString(36).substring(2, 6);
+      const botName = `Bot ${count + 1}`;
 
-        renderPlayers(data);
-        renderDice(data.diceResults);
-
-        const activePlayerId = data.playerOrder[data.turnIndex];
-        const isMyTurn = activePlayerId === localPlayerId && data.status === "playing";
-
-        // Botões de Ação
-        btnRoll.disabled = !isMyTurn || data.rollsLeft <= 0;
-        btnEnd.disabled = !isMyTurn;
-        document.getElementById("rolls-left").innerText = data.rollsLeft;
-
-        // Status
-        if (data.status === "waiting") {
-          document.getElementById("turn-status").innerText = "Aguardando o criador iniciar a partida...";
-        } else {
-          document.getElementById("turn-status").innerText = isMyTurn ? 
-            "🎯 É A SUA VEZ DE JOGAR!" : 
-            `Aguardando jogada de: ${data.players[activePlayerId]?.name || 'Pistoleiro'}`;
-        }
-
-        // Exibir Iniciar para o Criador da Sala
-        if (data.host === localPlayerId && data.status === "waiting") {
-          btnStart.classList.remove("hidden");
-        } else {
-          btnStart.classList.add("hidden");
-        }
+      await update(ref(db, `rooms/${currentRoomCode}/players/${botId}`), {
+        name: botName, hp: 4, maxHp: 4, arrows: 0, role: "Aguardando", isBot: true, alive: true
       });
-    }
+      await update(ref(db, `rooms/${currentRoomCode}`), { playerOrder: [...data.playerOrder, botId] });
+    });
 
-    // Iniciar Partida (Sorteio de Funções para 2 a 8 Jogadores)
+    // Iniciar Partida
     btnStart.addEventListener("click", async () => {
       const roomRef = ref(db, `rooms/${currentRoomCode}`);
       const snapshot = await get(roomRef);
       const data = snapshot.val();
 
-      const playersKeys = data.playerOrder;
-      const count = playersKeys.length;
+      const playerKeys = data.playerOrder;
+      const count = playerKeys.length;
 
       let roles = [];
       if (count === 2) roles = ["Xerife", "Fora-da-Lei"];
       else if (count === 3) roles = ["Xerife", "Fora-da-Lei", "Renegado"];
       else if (count === 4) roles = ["Xerife", "Ajudante", "Fora-da-Lei", "Renegado"];
-      else {
-        roles = ["Xerife", "Ajudante", "Fora-da-Lei", "Fora-da-Lei", "Renegado", "Fora-da-Lei", "Ajudante", "Fora-da-Lei"].slice(0, count);
-      }
+      else roles = ["Xerife", "Ajudante", "Fora-da-Lei", "Fora-da-Lei", "Renegado", "Fora-da-Lei", "Ajudante", "Fora-da-Lei"].slice(0, count);
 
-      // Embaralhar papéis
       roles.sort(() => Math.random() - 0.5);
+      const chars = [...CHARACTERS].sort(() => Math.random() - 0.5);
 
       const updatedPlayers = {};
-      playersKeys.forEach((id, idx) => {
-        const r = roles[idx];
-        const isSheriff = r === "Xerife";
+      playerKeys.forEach((id, idx) => {
+        const role = roles[idx];
+        const char = chars[idx % chars.length];
+        const isSheriff = role === "Xerife";
+        const maxHp = char.maxHp + (isSheriff ? 2 : 0);
+
         updatedPlayers[id] = {
           ...data.players[id],
-          role: r,
-          hp: isSheriff ? 5 : 4,
-          maxHp: isSheriff ? 5 : 4
+          character: char.name,
+          role: role,
+          hp: maxHp,
+          maxHp: maxHp,
+          arrows: 0,
+          alive: true
         };
       });
 
-      await update(roomRef, {
-        status: "playing",
-        players: updatedPlayers
-      });
+      await update(roomRef, { status: "playing", players: updatedPlayers, arrowPool: 9 });
+      logMessage("🤠 A partida começou! O Xerife foi revelado.");
     });
 
-    // Renderizar Jogadores
-    function renderPlayers(data) {
+    // Escutar Alterações na Sala
+    function listenRoom() {
+      onValue(ref(db, `rooms/${currentRoomCode}`), (snapshot) => {
+        const data = snapshot.val();
+        if (!data) return;
+
+        renderBoard(data);
+        renderDice(data.diceResults);
+
+        const activePlayerId = data.playerOrder[data.turnIndex];
+        const activePlayer = data.players[activePlayerId];
+        const isMyTurn = activePlayerId === localPlayerId && data.status === "playing";
+
+        document.getElementById("arrow-count").innerText = data.arrowPool;
+
+        if (data.host === localPlayerId && data.status === "waiting") {
+          btnAddBot.classList.remove("hidden");
+          btnStart.classList.remove("hidden");
+        } else {
+          btnAddBot.classList.add("hidden");
+          btnStart.classList.add("hidden");
+        }
+
+        btnRoll.disabled = !isMyTurn || data.rollsLeft <= 0;
+        btnEnd.disabled = !isMyTurn;
+        document.getElementById("rolls-left").innerText = data.rollsLeft;
+
+        if (data.status === "playing") {
+          document.getElementById("turn-status").innerText = isMyTurn ? 
+            "🎯 SUA VEZ: Role os dados ou escolha o que travar!" : 
+            `Aguardando turno de: ${activePlayer?.name}`;
+
+          // Se for turno de Bot, o Host gerencia a IA
+          if (activePlayer?.isBot && data.host === localPlayerId) {
+            handleBotTurn(data, activePlayerId);
+          }
+        }
+      });
+    }
+
+    // Renderizar Tabuleiro
+    function renderBoard(data) {
       const board = document.getElementById("players-board");
       board.innerHTML = "";
 
@@ -549,20 +384,23 @@
       Object.entries(data.players || {}).forEach(([id, player]) => {
         const isMe = id === localPlayerId;
         const isActive = id === activePlayerId;
-        
-        // Regra de Exibição do Papel (Xerife é público, outros velados)
-        let roleDisplay = "???";
-        if (isMe || player.role === "Xerife" || !player.alive) {
-          roleDisplay = player.role;
-        }
+        const roleText = (isMe || player.role === "Xerife" || !player.alive) ? player.role : "???";
 
         const div = document.createElement("div");
-        div.className = `player-card ${isActive ? 'active-turn' : ''} ${isMe ? 'is-me' : ''}`;
+        div.id = `p-card-${id}`;
+        div.className = `player-card ${isActive ? 'active-turn' : ''} ${isMe ? 'is-me' : ''} ${!player.alive ? 'dead' : ''}`;
+        
         div.innerHTML = `
-          <div class="player-name">${player.name} ${isMe ? '(Você)' : ''}</div>
-          <div class="player-role">${roleDisplay}</div>
-          <div class="player-hp">❤️ ${player.hp}/${player.maxHp}</div>
+          <div class="player-name">${player.name}</div>
+          <div class="player-char">${player.character || 'Pistoleiro'}</div>
+          <div class="player-role">${roleText}</div>
+          <div class="player-stats">
+            <span>❤️ ${player.hp}/${player.maxHp}</span>
+            <span>🏹 ${player.arrows}</span>
+          </div>
         `;
+
+        div.addEventListener("click", () => handleTargetSelection(id, data));
         board.appendChild(div);
 
         if (isMe && player.role) {
@@ -575,36 +413,187 @@
     function renderDice(dice) {
       const container = document.getElementById("dice-container");
       container.innerHTML = "";
-      (dice || ["-", "-", "-", "-", "-"]).forEach(val => {
+
+      (dice || ["-", "-", "-", "-", "-"]).forEach((val, i) => {
         const d = document.createElement("div");
-        d.className = "die";
+        const isKept = keptDiceIndices.includes(i);
+        const isDynamite = val === "💣";
+
+        d.className = `die ${isKept ? 'kept' : ''} ${isDynamite ? 'locked' : ''}`;
         d.innerText = val;
+
+        d.addEventListener("click", () => {
+          if (isDynamite) return;
+          if (keptDiceIndices.includes(i)) {
+            keptDiceIndices = keptDiceIndices.filter(idx => idx !== i);
+          } else {
+            keptDiceIndices.push(i);
+          }
+          renderDice(dice);
+        });
+
         container.appendChild(d);
       });
     }
 
     // Rolar Dados
     btnRoll.addEventListener("click", async () => {
-      const faces = ["💥 1", "💥 2", "🍺", "🏹", "💣", "🎯"];
-      const newDice = Array.from({ length: 5 }, () => faces[Math.floor(Math.random() * faces.length)]);
-
       const roomRef = ref(db, `rooms/${currentRoomCode}`);
       const snapshot = await get(roomRef);
       const data = snapshot.val();
 
+      const faces = ["🎯1", "🎯2", "🍺", "🏹", "💣", "🔫"];
+      let newDice = [...data.diceResults];
+
+      for (let i = 0; i < 5; i++) {
+        if (!keptDiceIndices.includes(i) && newDice[i] !== "💣") {
+          newDice[i] = faces[Math.floor(Math.random() * faces.length)];
+        }
+      }
+
+      // Processar Flechas imediatas da rolagem
+      let newArrowPool = data.arrowPool;
+      let activePlayer = { ...data.players[localPlayerId] };
+
+      newDice.forEach((face, idx) => {
+        if (face === "🏹" && data.diceResults[idx] !== "🏹") {
+          if (newArrowPool > 0) {
+            newArrowPool--;
+            activePlayer.arrows++;
+          }
+        }
+      });
+
+      // Checar Ataque de Índios (se acabou a reserva)
+      if (newArrowPool <= 0) {
+        logMessage("🏹 Os Índios Atacaram! Todos perderam vida pelas suas flechas.");
+        Object.keys(data.players).forEach(pId => {
+          data.players[pId].hp = Math.max(0, data.players[pId].hp - data.players[pId].arrows);
+          data.players[pId].arrows = 0;
+        });
+        newArrowPool = 9;
+        activePlayer.arrows = 0;
+      }
+
+      // Checar 3x Dinamite
+      const dynamites = newDice.filter(d => d === "💣").length;
+      let newRollsLeft = data.rollsLeft - 1;
+
+      if (dynamites >= 3) {
+        logMessage("💣 KABOOM! 3 Dinamites explodiram. Você perdeu 1 PV!");
+        activePlayer.hp = Math.max(0, activePlayer.hp - 1);
+        newRollsLeft = 0; // Encerra rolagens
+      }
+
+      data.players[localPlayerId] = activePlayer;
+
       await update(roomRef, {
         diceResults: newDice,
-        rollsLeft: data.rollsLeft - 1
+        rollsLeft: newRollsLeft,
+        arrowPool: newArrowPool,
+        players: data.players
       });
+
+      if (newRollsLeft === 0) {
+        btnResolve.classList.remove("hidden");
+      }
     });
 
-    // Passar Vez
+    // Resolver Ações dos Dados e Ativar Seleção de Alvos
+    btnResolve.addEventListener("click", async () => {
+      const roomRef = ref(db, `rooms/${currentRoomCode}`);
+      const snapshot = await get(roomRef);
+      const data = snapshot.val();
+      const dice = data.diceResults;
+
+      // Checar Gatling (3x ou mais)
+      const gatlings = dice.filter(d => d === "🔫").length;
+      if (gatlings >= 3) {
+        logMessage("🔫 GATLING! Todos os outros perderam 1 PV.");
+        Object.keys(data.players).forEach(pId => {
+          if (pId !== localPlayerId) {
+            data.players[pId].hp = Math.max(0, data.players[pId].hp - 1);
+          }
+        });
+        // Devolve flechas ao banco
+        data.arrowPool += data.players[localPlayerId].arrows;
+        data.players[localPlayerId].arrows = 0;
+      }
+
+      // Habilitar botões para alvos se houver Mira ou Cerveja
+      if (dice.includes("🎯1")) enableTargetSelection('attack1', data);
+      else if (dice.includes("🎯2")) enableTargetSelection('attack2', data);
+      else if (dice.includes("🍺")) enableTargetSelection('beer', data);
+      else {
+        btnResolve.classList.add("hidden");
+        logMessage("Ações resolvidas. Você pode passar a vez.");
+      }
+
+      await update(roomRef, { players: data.players, arrowPool: data.arrowPool });
+    });
+
+    // Destacar Alvos Elegíveis
+    function enableTargetSelection(mode, data) {
+      currentSelectionMode = mode;
+      const playerOrder = data.playerOrder.filter(id => data.players[id].alive);
+      const myIndex = playerOrder.indexOf(localPlayerId);
+      const total = playerOrder.length;
+
+      document.querySelectorAll(".player-card").forEach(el => el.classList.remove("selectable-target"));
+
+      if (mode === 'attack1') {
+        const left = playerOrder[(myIndex - 1 + total) % total];
+        const right = playerOrder[(myIndex + 1) % total];
+        [left, right].forEach(id => document.getElementById(`p-card-${id}`)?.classList.add("selectable-target"));
+        logMessage("🎯 Clique em um jogador a distância 1 para ATACAR.");
+      } else if (mode === 'attack2') {
+        const left2 = playerOrder[(myIndex - 2 + total) % total];
+        const right2 = playerOrder[(myIndex + 2) % total];
+        [left2, right2].forEach(id => document.getElementById(`p-card-${id}`)?.classList.add("selectable-target"));
+        logMessage("🎯 Clique em um jogador a distância 2 para ATACAR.");
+      } else if (mode === 'beer') {
+        playerOrder.forEach(id => document.getElementById(`p-card-${id}`)?.classList.add("selectable-target"));
+        logMessage("🍺 Clique em um jogador para CURAR 1 PV.");
+      }
+    }
+
+    // Clique no Jogador Alvo
+    async function handleTargetSelection(targetId, data) {
+      if (!currentSelectionMode) return;
+
+      const roomRef = ref(db, `rooms/${currentRoomCode}`);
+      const target = data.players[targetId];
+
+      if (currentSelectionMode.startsWith('attack')) {
+        target.hp = Math.max(0, target.hp - 1);
+        logMessage(`💥 Você atacou ${target.name}! (-1 PV)`);
+      } else if (currentSelectionMode === 'beer') {
+        target.hp = Math.min(target.maxHp, target.hp + 1);
+        logMessage(`🍺 Você curou ${target.name}! (+1 PV)`);
+      }
+
+      // Limpar seleção
+      currentSelectionMode = null;
+      document.querySelectorAll(".player-card").forEach(el => el.classList.remove("selectable-target"));
+      btnResolve.classList.add("hidden");
+
+      await update(roomRef, { players: data.players });
+    }
+
+    // Passar Turno
     btnEnd.addEventListener("click", async () => {
       const roomRef = ref(db, `rooms/${currentRoomCode}`);
       const snapshot = await get(roomRef);
       const data = snapshot.val();
 
-      const nextIndex = (data.turnIndex + 1) % data.playerOrder.length;
+      keptDiceIndices = [];
+      btnResolve.classList.add("hidden");
+
+      let nextIndex = (data.turnIndex + 1) % data.playerOrder.length;
+      // Pular mortos
+      while (!data.players[data.playerOrder[nextIndex]].alive) {
+        nextIndex = (nextIndex + 1) % data.playerOrder.length;
+      }
 
       await update(roomRef, {
         turnIndex: nextIndex,
@@ -612,6 +601,43 @@
         diceResults: ["-", "-", "-", "-", "-"]
       });
     });
+
+    // Lógica do BOT (Executada pelo Host)
+    async function handleBotTurn(data, botId) {
+      logMessage(`🤖 Turno de ${data.players[botId].name}...`);
+      
+      setTimeout(async () => {
+        const roomRef = ref(db, `rooms/${currentRoomCode}`);
+        const faces = ["🎯1", "🎯2", "🍺", "🏹", "💣", "🔫"];
+        const dice = Array.from({ length: 5 }, () => faces[Math.floor(Math.random() * faces.length)]);
+        
+        // Bot cura a si mesmo ou o Xerife se tiver cerveja
+        let players = { ...data.players };
+        if (dice.includes("🍺")) {
+          players[botId].hp = Math.min(players[botId].maxHp, players[botId].hp + 1);
+        }
+
+        let nextIndex = (data.turnIndex + 1) % data.playerOrder.length;
+        while (!players[data.playerOrder[nextIndex]].alive) {
+          nextIndex = (nextIndex + 1) % data.playerOrder.length;
+        }
+
+        await update(roomRef, {
+          diceResults: dice,
+          players: players,
+          turnIndex: nextIndex,
+          rollsLeft: 3
+        });
+      }, 2500);
+    }
+
+    function logMessage(msg) {
+      const box = document.getElementById("game-log");
+      const p = document.createElement("p");
+      p.innerText = `> ${msg}`;
+      box.appendChild(p);
+      box.scrollTop = box.scrollHeight;
+    }
   </script>
 </body>
 </html>
