@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Space Defense - MegaHit Games</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -24,6 +24,15 @@
         .btn-upgrade:disabled { opacity: 0.4; cursor: not-allowed; border-color: #1e293b; }
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        /* Adicione estas regras dentro da tag <style> do index.html */
+        .pb-safe {
+            padding-bottom: max(12px, env(safe-area-inset-bottom));
+        }
+        
+        /* Garante espaço suficiente no rodapé para os botões do Android não cobrirem os textos */
+        footer.hud-glass {
+            padding-bottom: max(14px, env(safe-area-inset-bottom));
+        }
     </style>
 </head>
 <body class="h-screen w-screen flex flex-col overflow-hidden select-none">
@@ -123,63 +132,65 @@
     </main>
 
     <!-- HUD INFERIOR: LOJA DE UPGRADES -->
-    <footer class="hud-glass p-1.5 sm:p-2.5 z-10 border-t border-slate-800">
-        <div class="max-w-4xl mx-auto grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-6 gap-1.5 sm:gap-2">
-            <button id="btn-upgrade-atkSpeed" onclick="buyUpgrade('atkSpeed')" class="btn-upgrade p-1.5 sm:p-2 rounded-lg sm:rounded-xl text-left flex flex-col justify-between">
-                <div class="flex justify-between items-start">
-                    <span class="text-[10px] sm:text-[11px] font-bold text-blue-300">⚡ Atk Spd</span>
-                    <span id="lvl-atkSpeed" class="text-[9px] sm:text-[10px] bg-blue-900/60 text-blue-200 px-1 rounded font-mono">Nv 1</span>
-                </div>
-                <div class="text-[9px] sm:text-[10px] text-slate-400 mt-0.5">Cadência</div>
-                <div class="mt-0.5 text-[10px] sm:text-xs font-bold text-amber-400">🪙 <span id="cost-atkSpeed">15</span></div>
-            </button>
+<!-- HUD INFERIOR: LOJA DE UPGRADES -->
+<footer class="hud-glass p-1.5 sm:p-2.5 z-10 border-t border-slate-800 shrink-0 pb-safe">
+    <div class="max-w-5xl mx-auto flex sm:grid sm:grid-cols-3 lg:grid-cols-6 gap-1.5 sm:gap-2 overflow-x-auto shop-scroll pb-2 sm:pb-0">
+        
+        <button id="btn-upgrade-atkSpeed" onclick="buyUpgrade('atkSpeed')" class="btn-upgrade min-w-[110px] sm:min-w-0 p-2 rounded-xl text-left flex flex-col justify-between shrink-0">
+            <div class="flex justify-between items-start gap-1">
+                <span class="text-[10px] sm:text-[11px] font-bold text-blue-300 truncate">⚡ Atk Spd</span>
+                <span id="lvl-atkSpeed" class="text-[9px] sm:text-[10px] bg-blue-900/60 text-blue-200 px-1 rounded font-mono">Nv 1</span>
+            </div>
+            <div class="text-[9px] sm:text-[10px] text-slate-400 mt-0.5">Cadência</div>
+            <div class="mt-0.5 text-[10px] sm:text-xs font-bold text-amber-400">🪙 <span id="cost-atkSpeed">15</span></div>
+        </button>
 
-            <button id="btn-upgrade-damage" onclick="buyUpgrade('damage')" class="btn-upgrade p-1.5 sm:p-2 rounded-lg sm:rounded-xl text-left flex flex-col justify-between">
-                <div class="flex justify-between items-start">
-                    <span class="text-[10px] sm:text-[11px] font-bold text-red-300">⚔️ Dano</span>
-                    <span id="lvl-damage" class="text-[9px] sm:text-[10px] bg-red-900/60 text-red-200 px-1 rounded font-mono">Nv 1</span>
-                </div>
-                <div class="text-[9px] sm:text-[10px] text-slate-400 mt-0.5">Por tiro</div>
-                <div class="mt-0.5 text-[10px] sm:text-xs font-bold text-amber-400">🪙 <span id="cost-damage">10</span></div>
-            </button>
+        <button id="btn-upgrade-damage" onclick="buyUpgrade('damage')" class="btn-upgrade min-w-[110px] sm:min-w-0 p-2 rounded-xl text-left flex flex-col justify-between shrink-0">
+            <div class="flex justify-between items-start gap-1">
+                <span class="text-[10px] sm:text-[11px] font-bold text-red-300 truncate">⚔️ Dano</span>
+                <span id="lvl-damage" class="text-[9px] sm:text-[10px] bg-red-900/60 text-red-200 px-1 rounded font-mono">Nv 1</span>
+            </div>
+            <div class="text-[9px] sm:text-[10px] text-slate-400 mt-0.5">Por tiro</div>
+            <div class="mt-0.5 text-[10px] sm:text-xs font-bold text-amber-400">🪙 <span id="cost-damage">10</span></div>
+        </button>
 
-            <button id="btn-upgrade-hp" onclick="buyUpgrade('hp')" class="btn-upgrade p-1.5 sm:p-2 rounded-lg sm:rounded-xl text-left flex flex-col justify-between">
-                <div class="flex justify-between items-start">
-                    <span class="text-[10px] sm:text-[11px] font-bold text-emerald-300">🛡️ Max HP</span>
-                    <span id="lvl-hp" class="text-[9px] sm:text-[10px] bg-emerald-900/60 text-emerald-200 px-1 rounded font-mono">Nv 1</span>
-                </div>
-                <div class="text-[9px] sm:text-[10px] text-slate-400 mt-0.5">Vida Nave</div>
-                <div class="mt-0.5 text-[10px] sm:text-xs font-bold text-amber-400">🪙 <span id="cost-hp">20</span></div>
-            </button>
+        <button id="btn-upgrade-hp" onclick="buyUpgrade('hp')" class="btn-upgrade min-w-[110px] sm:min-w-0 p-2 rounded-xl text-left flex flex-col justify-between shrink-0">
+            <div class="flex justify-between items-start gap-1">
+                <span class="text-[10px] sm:text-[11px] font-bold text-emerald-300 truncate">🛡️ Max HP</span>
+                <span id="lvl-hp" class="text-[9px] sm:text-[10px] bg-emerald-900/60 text-emerald-200 px-1 rounded font-mono">Nv 1</span>
+            </div>
+            <div class="text-[9px] sm:text-[10px] text-slate-400 mt-0.5">Vida Nave</div>
+            <div class="mt-0.5 text-[10px] sm:text-xs font-bold text-amber-400">🪙 <span id="cost-hp">20</span></div>
+        </button>
 
-            <button id="btn-upgrade-hpRegen" onclick="buyUpgrade('hpRegen')" class="btn-upgrade p-1.5 sm:p-2 rounded-lg sm:rounded-xl text-left flex flex-col justify-between">
-                <div class="flex justify-between items-start">
-                    <span class="text-[10px] sm:text-[11px] font-bold text-teal-300">💖 Regen</span>
-                    <span id="lvl-hpRegen" class="text-[9px] sm:text-[10px] bg-teal-900/60 text-teal-200 px-1 rounded font-mono">Nv 0</span>
-                </div>
-                <div class="text-[9px] sm:text-[10px] text-slate-400 mt-0.5">Cura/seg</div>
-                <div class="mt-0.5 text-[10px] sm:text-xs font-bold text-amber-400">🪙 <span id="cost-hpRegen">25</span></div>
-            </button>
+        <button id="btn-upgrade-hpRegen" onclick="buyUpgrade('hpRegen')" class="btn-upgrade min-w-[110px] sm:min-w-0 p-2 rounded-xl text-left flex flex-col justify-between shrink-0">
+            <div class="flex justify-between items-start gap-1">
+                <span class="text-[10px] sm:text-[11px] font-bold text-teal-300 truncate">💖 Regen</span>
+                <span id="lvl-hpRegen" class="text-[9px] sm:text-[10px] bg-teal-900/60 text-teal-200 px-1 rounded font-mono">Nv 0</span>
+            </div>
+            <div class="text-[9px] sm:text-[10px] text-slate-400 mt-0.5">Cura/seg</div>
+            <div class="mt-0.5 text-[10px] sm:text-xs font-bold text-amber-400">🪙 <span id="cost-hpRegen">25</span></div>
+        </button>
 
-            <button id="btn-upgrade-goldWave" onclick="buyUpgrade('goldWave')" class="btn-upgrade p-1.5 sm:p-2 rounded-lg sm:rounded-xl text-left flex flex-col justify-between">
-                <div class="flex justify-between items-start">
-                    <span class="text-[10px] sm:text-[11px] font-bold text-amber-300">💰 +Onda</span>
-                    <span id="lvl-goldWave" class="text-[9px] sm:text-[10px] bg-amber-900/60 text-amber-200 px-1 rounded font-mono">Nv 1</span>
-                </div>
-                <div class="text-[9px] sm:text-[10px] text-slate-400 mt-0.5">Bônus Onda</div>
-                <div class="mt-0.5 text-[10px] sm:text-xs font-bold text-amber-400">🪙 <span id="cost-goldWave">30</span></div>
-            </button>
+        <button id="btn-upgrade-goldWave" onclick="buyUpgrade('goldWave')" class="btn-upgrade min-w-[110px] sm:min-w-0 p-2 rounded-xl text-left flex flex-col justify-between shrink-0">
+            <div class="flex justify-between items-start gap-1">
+                <span class="text-[10px] sm:text-[11px] font-bold text-amber-300 truncate">💰 +Onda</span>
+                <span id="lvl-goldWave" class="text-[9px] sm:text-[10px] bg-amber-900/60 text-amber-200 px-1 rounded font-mono">Nv 1</span>
+            </div>
+            <div class="text-[9px] sm:text-[10px] text-slate-400 mt-0.5">Bônus Onda</div>
+            <div class="mt-0.5 text-[10px] sm:text-xs font-bold text-amber-400">🪙 <span id="cost-goldWave">30</span></div>
+        </button>
 
-            <button id="btn-upgrade-goldKill" onclick="buyUpgrade('goldKill')" class="btn-upgrade p-1.5 sm:p-2 rounded-lg sm:rounded-xl text-left flex flex-col justify-between">
-                <div class="flex justify-between items-start">
-                    <span class="text-[10px] sm:text-[11px] font-bold text-yellow-300">🎯 +Abate</span>
-                    <span id="lvl-goldKill" class="text-[9px] sm:text-[10px] bg-yellow-900/60 text-yellow-200 px-1 rounded font-mono">Nv 1</span>
-                </div>
-                <div class="text-[9px] sm:text-[10px] text-slate-400 mt-0.5">Por Abate</div>
-                <div class="mt-0.5 text-[10px] sm:text-xs font-bold text-amber-400">🪙 <span id="cost-goldKill">40</span></div>
-            </button>
-        </div>
-    </footer>
+        <button id="btn-upgrade-goldKill" onclick="buyUpgrade('goldKill')" class="btn-upgrade min-w-[110px] sm:min-w-0 p-2 rounded-xl text-left flex flex-col justify-between shrink-0">
+            <div class="flex justify-between items-start gap-1">
+                <span class="text-[10px] sm:text-[11px] font-bold text-yellow-300 truncate">🎯 +Abate</span>
+                <span id="lvl-goldKill" class="text-[9px] sm:text-[10px] bg-yellow-900/60 text-yellow-200 px-1 rounded font-mono">Nv 1</span>
+            </div>
+            <div class="text-[9px] sm:text-[10px] text-slate-400 mt-0.5">Por Abate</div>
+            <div class="mt-0.5 text-[10px] sm:text-xs font-bold text-amber-400">🪙 <span id="cost-goldKill">40</span></div>
+        </button>
+    </div>
+</footer>
 
     <!-- MODAL RECOMPENSA DE CHEFE -->
     <div id="boss-reward-modal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
