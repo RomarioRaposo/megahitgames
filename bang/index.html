@@ -52,9 +52,12 @@
     .back-btn { color: var(--primary-color); text-decoration: none; font-weight: 700; font-size: 0.9rem; }
     h1 { font-size: 1.2rem; font-weight: 800; }
 
-    .theme-btn {
+    .header-actions { display: flex; gap: 0.5rem; align-items: center; }
+
+    .theme-btn, .info-btn {
       background: transparent; border: 1px solid var(--border-color);
       color: var(--text-color); padding: 0.5rem 0.75rem; border-radius: 8px; cursor: pointer;
+      font-weight: 600; font-size: 0.85rem;
     }
 
     main { flex: 1; max-width: 950px; width: 100%; margin: 1rem auto; padding: 0 1rem; }
@@ -73,6 +76,10 @@
     .btn-danger { background-color: var(--danger-color); color: #fff; }
     .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
+    /* LISTA DE SALAS */
+    .rooms-list { margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 1rem; }
+    .room-item { display: flex; justify-content: space-between; align-items: center; padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 0.5rem; }
+
     /* MESA E JOGADORES */
     .status-bar { display: flex; justify-content: space-between; align-items: center; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border-color); margin-bottom: 1rem; }
     .badge { background: var(--border-color); padding: 0.25rem 0.5rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; }
@@ -81,7 +88,7 @@
     
     .player-card {
       border: 2px solid var(--border-color); border-radius: 12px; padding: 0.75rem; text-align: center;
-      background: var(--card-bg); position: relative; transition: all 0.2s; cursor: pointer;
+      background: var(--card-bg); position: relative; transition: all 0.2s; cursor: pointer; user-select: none;
     }
     .player-card.active-turn { border-color: var(--primary-color); box-shadow: 0 0 12px rgba(217, 119, 6, 0.4); }
     .player-card.is-me { background-color: rgba(217, 119, 6, 0.08); }
@@ -105,17 +112,15 @@
     .player-role { font-size: 0.75rem; font-weight: 700; color: var(--secondary-color); background: var(--border-color); border-radius: 4px; padding: 2px 4px; display: inline-block; }
     .player-stats { display: flex; justify-content: space-around; margin-top: 0.5rem; font-size: 0.9rem; font-weight: 800; }
 
-    /* RESERVA DE FLECHAS */
+    /* RESERVA DE FLECHAS E DADOS */
     .arrow-bank { text-align: center; background: rgba(220, 38, 38, 0.1); border: 1px dashed var(--danger-color); padding: 0.5rem; border-radius: 10px; margin-bottom: 1rem; font-weight: 700; }
-
-    /* LEGENDA DE DADOS */
+    
     .legend-box {
       display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.5rem;
       background: var(--bg-color); border: 1px solid var(--border-color); padding: 0.75rem; border-radius: 10px; margin-bottom: 1rem; font-size: 0.75rem;
     }
     .legend-item { display: flex; align-items: center; gap: 0.4rem; }
 
-    /* DADOS E AÇÕES */
     .dice-area { background-color: var(--bg-color); border-radius: 12px; padding: 1rem; text-align: center; }
     .dice-container { display: flex; justify-content: center; gap: 0.5rem; margin: 1rem 0; flex-wrap: wrap; }
     
@@ -129,6 +134,19 @@
 
     .controls-row { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; margin-top: 0.75rem; }
     .log-box { margin-top: 1rem; max-height: 120px; overflow-y: auto; text-align: left; background: var(--card-bg); padding: 0.5rem; border-radius: 8px; border: 1px solid var(--border-color); font-size: 0.8rem; }
+
+    /* MODAL DE COMO JOGAR E DETALHES */
+    .modal-overlay {
+      position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.7);
+      display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem;
+    }
+    .modal-content {
+      background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px;
+      max-width: 500px; width: 100%; padding: 1.5rem; max-height: 80vh; overflow-y: auto;
+    }
+    .modal-content h3 { color: var(--primary-color); margin-bottom: 0.75rem; }
+    .modal-content p, .modal-content ul { font-size: 0.85rem; line-height: 1.4; color: var(--text-color); margin-bottom: 0.75rem; }
+    .modal-content ul { padding-left: 1.2rem; }
   </style>
 </head>
 <body class="dark-theme">
@@ -138,14 +156,17 @@
       <a href="../index.html" class="back-btn">← Hub</a>
       <h1>🌵 BANG! The Dice Game</h1>
     </div>
-    <button id="theme-toggle" class="theme-btn">🌓 Tema</button>
+    <div class="header-actions">
+      <button id="btn-how-to-play" class="info-btn">📜 Como Jogar</button>
+      <button id="theme-toggle" class="theme-btn">🌓 Tema</button>
+    </div>
   </header>
 
   <main>
     <!-- LOBBY -->
     <section id="lobby-screen" class="card">
       <div style="text-align:center; margin-bottom: 1rem;">
-        <h2>Entrar na Mesa</h2>
+        <h2>ENTRAR NA SALA</h2>
         <p style="color:var(--text-muted); font-size:0.9rem;">Multiplayer online ou Solo com Bots (2 a 8 Jogadores)</p>
       </div>
       
@@ -157,6 +178,13 @@
           <button id="btn-create" class="btn btn-primary">Criar Sala</button>
           <button id="btn-join" class="btn btn-secondary">Entrar</button>
         </div>
+        <button id="btn-search-rooms" class="btn btn-secondary" style="width:100%;">🔍 BUSCAR SALAS ABERTAS</button>
+      </div>
+
+      <!-- PAINEL DE SALAS ENCONTRADAS -->
+      <div id="rooms-panel" class="rooms-list hidden">
+        <h3 style="font-size:0.9rem; margin-bottom:0.5rem;">Salas Disponíveis:</h3>
+        <div id="rooms-container"></div>
       </div>
     </section>
 
@@ -165,17 +193,15 @@
       <div class="status-bar">
         <div>Sala: <span id="display-room-code" class="badge">---</span></div>
         <div>Função: <span id="display-role" class="badge">???</span></div>
+        <button id="btn-close-room" class="btn btn-danger hidden" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;">🔴 Fechar Sala</button>
       </div>
 
-      <!-- BANCO DE FLECHAS -->
       <div class="arrow-bank">
         🏹 Flechas na Reserva: <span id="arrow-count">9</span> / 9
       </div>
 
-      <!-- TABULEIRO DE JOGADORES -->
       <div id="players-board" class="players-grid"></div>
 
-      <!-- LEGENDA DOS DADOS -->
       <div class="legend-box">
         <div class="legend-item">🎯1 : Ataca dist. 1</div>
         <div class="legend-item">🎯2 : Ataca dist. 2</div>
@@ -185,8 +211,11 @@
         <div class="legend-item">🔫 : 3x Dano Geral</div>
       </div>
 
-      <!-- ÁREA DOS DADOS -->
       <div class="dice-area">
+        <div id="pending-box" class="pending-actions-badge hidden" style="background:rgba(217,119,6,0.2); padding:0.4rem; border-radius:8px; font-weight:bold; margin-bottom:0.5rem;">
+          Ações Pendentes: <span id="pending-list">-</span>
+        </div>
+
         <p id="turn-status" style="font-weight:700; min-height:1.2em;">Aguardando início...</p>
 
         <div id="dice-container" class="dice-container"></div>
@@ -195,7 +224,7 @@
           <button id="btn-add-bot" class="btn btn-secondary hidden">🤖 + Add Bot</button>
           <button id="btn-start" class="btn btn-success hidden">🚀 Iniciar Partida</button>
           <button id="btn-roll" class="btn btn-primary" disabled>🎲 Rolar (<span id="rolls-left">3</span>)</button>
-          <button id="btn-attack" class="btn btn-danger" disabled>⚡ ATACAR / RESOLVER</button>
+          <button id="btn-resolve" class="btn btn-danger" disabled>⚡ RESOLVER DADOS</button>
           <button id="btn-end" class="btn btn-secondary" disabled>Passar Turno</button>
         </div>
 
@@ -204,9 +233,28 @@
     </section>
   </main>
 
+  <!-- MODAL DE COMO JOGAR E DETALHES -->
+  <div id="rules-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <h3 id="modal-title">📜 Como Jogar BANG! The Dice Game</h3>
+      <div id="modal-body">
+        <p><strong>Objetivo por Função:</strong></p>
+        <ul>
+          <li><strong>Xerife:</strong> Eliminar todos os Foras da Lei e o Renegado.</li>
+          <li><strong>Ajudante:</strong> Proteger o Xerife a qualquer custo.</li>
+          <li><strong>Fora da Lei:</strong> Eliminar o Xerife.</li>
+          <li><strong>Renegado:</strong> Ser o último sobrevivente na mesa.</li>
+        </ul>
+        <p><strong>Turno do Jogador:</strong></p>
+        <p>Role os 5 dados até 3 vezes. Guarde os dados que deseja manter e re-role os outros. Depois clique em <strong>RESOLVER DADOS</strong> para usar os tiros ou curas nos alvos destacados em verde!</p>
+      </div>
+      <button id="btn-close-modal" class="btn btn-primary" style="width:100%; margin-top:1rem;">Fechar</button>
+    </div>
+  </div>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, set, update, onValue, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getDatabase, ref, set, update, onValue, get, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCvhEL3kMRMYhPK55tcICbLsWFHd45WgB8",
@@ -235,27 +283,62 @@
     let localPlayerId = "p_" + Math.random().toString(36).substring(2, 7);
     let currentRoomCode = null;
     let keptDiceIndices = [];
-    let currentMode = null; // 'attack1', 'attack2', 'beer'
+    let activeDicePool = [];
 
     // DOM
     const lobbyScreen = document.getElementById("lobby-screen");
     const gameScreen = document.getElementById("game-screen");
     const btnCreate = document.getElementById("btn-create");
     const btnJoin = document.getElementById("btn-join");
+    const btnSearchRooms = document.getElementById("btn-search-rooms");
+    const roomsPanel = document.getElementById("rooms-panel");
+    const roomsContainer = document.getElementById("rooms-container");
     const btnAddBot = document.getElementById("btn-add-bot");
     const btnStart = document.getElementById("btn-start");
     const btnRoll = document.getElementById("btn-roll");
-    const btnAttack = document.getElementById("btn-attack");
+    const btnResolve = document.getElementById("btn-resolve");
     const btnEnd = document.getElementById("btn-end");
+    const btnCloseRoom = document.getElementById("btn-close-room");
+    const rulesModal = document.getElementById("rules-modal");
+    const btnHowToPlay = document.getElementById("btn-how-to-play");
+    const btnCloseModal = document.getElementById("btn-close-modal");
 
     document.getElementById("theme-toggle").addEventListener("click", () => document.body.classList.toggle("dark-theme"));
+    btnHowToPlay.addEventListener("click", () => showModal("📜 Como Jogar BANG!", null));
+    btnCloseModal.addEventListener("click", () => rulesModal.classList.add("hidden"));
 
     btnCreate.addEventListener("click", () => accessRoom(true));
     btnJoin.addEventListener("click", () => accessRoom(false));
 
+    // Buscar Salas Abertas
+    btnSearchRooms.addEventListener("click", async () => {
+      const roomsRef = ref(db, "rooms");
+      const snapshot = await get(roomsRef);
+      roomsContainer.innerHTML = "";
+
+      if (!snapshot.exists()) {
+        roomsContainer.innerHTML = "<p style='font-size:0.8rem;'>Nenhuma sala aberta no momento.</p>";
+      } else {
+        Object.entries(snapshot.val()).forEach(([code, data]) => {
+          if (data.status === "waiting") {
+            const count = Object.keys(data.players || {}).length;
+            const div = document.createElement("div");
+            div.className = "room-item";
+            div.innerHTML = `<span><strong>${code}</strong> (${count}/8 jog.)</span> <button class="btn btn-primary" style="padding:0.3rem 0.6rem; font-size:0.8rem;">Entrar</button>`;
+            div.querySelector("button").addEventListener("click", () => {
+              document.getElementById("room-code").value = code;
+              accessRoom(false);
+            });
+            roomsContainer.appendChild(div);
+          }
+        });
+      }
+      roomsPanel.classList.remove("hidden");
+    });
+
     async function accessRoom(isHost) {
       const name = document.getElementById("player-name").value.trim() || "Pistoleiro";
-      const code = document.getElementById("room-code").value.trim().toUpperCase();
+      let code = document.getElementById("room-code").value.trim().toUpperCase();
       if (!code) return alert("Digite o código da sala!");
 
       currentRoomCode = code;
@@ -263,7 +346,14 @@
       const snapshot = await get(roomRef);
 
       if (isHost) {
-        if (snapshot.exists()) return alert("Sala já existe!");
+        if (snapshot.exists()) {
+          const suggestedCode = `${code}${Math.floor(100 + Math.random() * 900)}`;
+          alert(`A sala '${code}' já existe! Usando sugestão: '${suggestedCode}'`);
+          document.getElementById("room-code").value = suggestedCode;
+          currentRoomCode = suggestedCode;
+          return accessRoom(true);
+        }
+
         await set(roomRef, {
           status: "waiting", host: localPlayerId, turnIndex: 0, playerOrder: [localPlayerId],
           rollsLeft: 3, diceResults: ["-", "-", "-", "-", "-"], arrowPool: 9,
@@ -282,9 +372,16 @@
 
       lobbyScreen.classList.add("hidden");
       gameScreen.classList.remove("hidden");
-      document.getElementById("display-room-code").innerText = code;
+      document.getElementById("display-room-code").innerText = currentRoomCode;
       listenRoom();
     }
+
+    btnCloseRoom.addEventListener("click", async () => {
+      if (confirm("Fechar e encerrar a sala?")) {
+        await remove(ref(db, `rooms/${currentRoomCode}`));
+        location.reload();
+      }
+    });
 
     btnAddBot.addEventListener("click", async () => {
       const roomRef = ref(db, `rooms/${currentRoomCode}`);
@@ -294,10 +391,8 @@
       if (count >= 8) return alert("Máximo 8 jogadores!");
 
       const botId = "bot_" + Math.random().toString(36).substring(2, 6);
-      const botName = `Bot ${count + 1}`;
-
       await update(ref(db, `rooms/${currentRoomCode}/players/${botId}`), {
-        name: botName, hp: 4, maxHp: 4, arrows: 0, role: "Aguardando", isBot: true, alive: true
+        name: `Bot ${count + 1}`, hp: 4, maxHp: 4, arrows: 0, role: "Aguardando", isBot: true, alive: true
       });
       await update(ref(db, `rooms/${currentRoomCode}`), { playerOrder: [...data.playerOrder, botId] });
     });
@@ -345,7 +440,7 @@
     function listenRoom() {
       onValue(ref(db, `rooms/${currentRoomCode}`), (snapshot) => {
         const data = snapshot.val();
-        if (!data) return;
+        if (!data) { alert("Sala encerrada!"); location.reload(); return; }
 
         renderBoard(data);
         renderDice(data.diceResults);
@@ -356,36 +451,30 @@
 
         document.getElementById("arrow-count").innerText = data.arrowPool;
 
-        if (data.host === localPlayerId && data.status === "waiting") {
-          btnAddBot.classList.remove("hidden");
-          btnStart.classList.remove("hidden");
-        } else {
-          btnAddBot.classList.add("hidden");
-          btnStart.classList.add("hidden");
-        }
+        if (data.host === localPlayerId) {
+          btnCloseRoom.classList.remove("hidden");
+          if (data.status === "waiting") { btnAddBot.classList.remove("hidden"); btnStart.classList.remove("hidden"); }
+          else { btnAddBot.classList.add("hidden"); btnStart.classList.add("hidden"); }
+        } else { btnCloseRoom.classList.add("hidden"); btnAddBot.classList.add("hidden"); btnStart.classList.add("hidden"); }
 
-        // Habilitar controles na minha vez
-        btnRoll.disabled = !isMyTurn || data.rollsLeft <= 0;
-        
-        // Botão de Atacar fica liberado se tiver feito pelo menos 1 rolagem e for a vez
         const hasRolledOnce = data.rollsLeft < 3;
-        btnAttack.disabled = !isMyTurn || !hasRolledOnce;
-        btnEnd.disabled = !isMyTurn || !hasRolledOnce;
+        btnRoll.disabled = !isMyTurn || data.rollsLeft <= 0 || activeDicePool.length > 0;
+        btnResolve.disabled = !isMyTurn || !hasRolledOnce || activeDicePool.length > 0;
+        btnEnd.disabled = !isMyTurn || !hasRolledOnce || activeDicePool.length > 0;
 
         document.getElementById("rolls-left").innerText = data.rollsLeft;
 
         if (data.status === "playing") {
           document.getElementById("turn-status").innerText = isMyTurn ? 
-            "🎲 SUA VEZ: Role os dados ou clique em '⚡ ATACAR / RESOLVER' para escolher o alvo!" : 
+            (activeDicePool.length > 0 ? "🎯 Clique na carta verde do alvo!" : "🎲 Sua vez! Role dados ou clique em 'RESOLVER DADOS'.") : 
             `Aguardando jogada de: ${activePlayer?.name}`;
 
-          if (activePlayer?.isBot && data.host === localPlayerId) {
-            handleBotTurn(data, activePlayerId);
-          }
+          if (activePlayer?.isBot && data.host === localPlayerId) handleBotTurn(data, activePlayerId);
         }
       });
     }
 
+    // Renderizar Tabuleiro com Interatividade Touch/Hold
     function renderBoard(data) {
       const board = document.getElementById("players-board");
       board.innerHTML = "";
@@ -410,12 +499,19 @@
           </div>
         `;
 
-        div.addEventListener("click", () => handleTargetSelection(id, data));
+        // Clique e Press-and-Hold para Detalhes do Personagem
+        let timer;
+        div.addEventListener("touchstart", () => { timer = setTimeout(() => showModal(`👤 ${player.name}`, player), 500); });
+        div.addEventListener("touchend", () => clearTimeout(timer));
+        
+        div.addEventListener("click", () => {
+          if (div.classList.contains("targetable")) handleTargetSelection(id, data);
+          else showModal(`👤 ${player.name}`, player);
+        });
+
         board.appendChild(div);
 
-        if (isMe && player.role) {
-          document.getElementById("display-role").innerText = player.role;
-        }
+        if (isMe && player.role) document.getElementById("display-role").innerText = player.role;
       });
     }
 
@@ -432,12 +528,9 @@
         d.innerText = val;
 
         d.addEventListener("click", () => {
-          if (isDynamite) return;
-          if (keptDiceIndices.includes(i)) {
-            keptDiceIndices = keptDiceIndices.filter(idx => idx !== i);
-          } else {
-            keptDiceIndices.push(i);
-          }
+          if (isDynamite || activeDicePool.length > 0) return;
+          if (keptDiceIndices.includes(i)) keptDiceIndices = keptDiceIndices.filter(idx => idx !== i);
+          else keptDiceIndices.push(i);
           renderDice(dice);
         });
 
@@ -445,7 +538,6 @@
       });
     }
 
-    // ROLAR DADOS
     btnRoll.addEventListener("click", async () => {
       const roomRef = ref(db, `rooms/${currentRoomCode}`);
       const snapshot = await get(roomRef);
@@ -477,7 +569,7 @@
         logMessage("🚨 Os Índios Atacaram! Todos perderam vida pelas suas flechas.");
         Object.keys(data.players).forEach(pId => {
           data.players[pId].hp = Math.max(0, data.players[pId].hp - data.players[pId].arrows);
-          if (data.players[pId].hp === 0) data.players[pId].alive = false;
+          if (data.players[pId].hp === 0 && data.players[pId].alive) handlePlayerDeath(pId, data);
           data.players[pId].arrows = 0;
         });
         newArrowPool = 9;
@@ -490,7 +582,7 @@
       if (dynamites >= 3) {
         logMessage("💣 3 Dinamites explodiram! Você perdeu 1 PV.");
         activePlayer.hp = Math.max(0, activePlayer.hp - 1);
-        if (activePlayer.hp === 0) activePlayer.alive = false;
+        if (activePlayer.hp === 0 && activePlayer.alive) handlePlayerDeath(localPlayerId, data);
         newRollsLeft = 0;
       }
 
@@ -504,20 +596,18 @@
       });
     });
 
-    // BOTÃO ATACAR / RESOLVER DADOS
-    btnAttack.addEventListener("click", async () => {
+    btnResolve.addEventListener("click", async () => {
       const roomRef = ref(db, `rooms/${currentRoomCode}`);
       const snapshot = await get(roomRef);
       const data = snapshot.val();
       const dice = data.diceResults;
 
-      // Resolver Gatling (3x)
       if (dice.filter(d => d === "🔫").length >= 3) {
         logMessage("🔫 METRALHADORA GATLING! Todos os outros perderam 1 PV.");
         Object.keys(data.players).forEach(pId => {
           if (pId !== localPlayerId && data.players[pId].alive) {
             data.players[pId].hp = Math.max(0, data.players[pId].hp - 1);
-            if (data.players[pId].hp === 0) data.players[pId].alive = false;
+            if (data.players[pId].hp === 0) handlePlayerDeath(pId, data);
           }
         });
         data.arrowPool += data.players[localPlayerId].arrows;
@@ -525,18 +615,27 @@
         await update(roomRef, { players: data.players, arrowPool: data.arrowPool });
       }
 
-      // Ativar seleção no tabuleiro baseada nos dados tirados
-      if (dice.includes("🎯1")) highlightTargets('attack1', data);
-      else if (dice.includes("🎯2")) highlightTargets('attack2', data);
-      else if (dice.includes("🍺")) highlightTargets('beer', data);
-      else logMessage("Você não tem dados de Mira (🎯) ou Cerveja (🍺) para resolver.");
+      activeDicePool = dice.filter(d => d === "🎯1" || d === "🎯2" || d === "🍺");
+      if (activeDicePool.length === 0) return logMessage("Sem dados para resolver.");
+
+      updatePendingUI();
+      highlightCurrentTarget(data);
     });
 
-    // Destacar Alvos Elegíveis no Tabuleiro
-    function highlightTargets(mode, data) {
-      currentMode = mode;
-      document.querySelectorAll(".player-card").forEach(el => el.classList.remove("targetable"));
+    function updatePendingUI() {
+      const box = document.getElementById("pending-box");
+      const list = document.getElementById("pending-list");
+      if (activeDicePool.length > 0) {
+        box.classList.remove("hidden");
+        list.innerText = activeDicePool.join("  ");
+      } else { box.classList.add("hidden"); }
+    }
 
+    function highlightCurrentTarget(data) {
+      document.querySelectorAll(".player-card").forEach(el => el.classList.remove("targetable"));
+      if (activeDicePool.length === 0) return;
+
+      const currentSymbol = activeDicePool[0];
       const aliveIds = data.playerOrder.filter(id => data.players[id].alive);
       const myIndex = aliveIds.indexOf(localPlayerId);
       const total = aliveIds.length;
@@ -544,19 +643,16 @@
       if (total <= 1) return;
 
       let validTargets = [];
-
-      if (mode === 'attack1') {
-        const left = aliveIds[(myIndex - 1 + total) % total];
-        const right = aliveIds[(myIndex + 1) % total];
-        validTargets = [left, right];
-        logMessage("🎯 Clique em um jogador VERDE (Distância 1) para ATACAR!");
-      } else if (mode === 'attack2') {
+      if (currentSymbol === '🎯1') {
+        validTargets = [aliveIds[(myIndex - 1 + total) % total], aliveIds[(myIndex + 1) % total]];
+        logMessage(`🎯 Resolvendo [🎯1]: Clique no alvo a Distância 1.`);
+      } else if (currentSymbol === '🎯2') {
         const targetIdx = total <= 2 ? (myIndex + 1) % total : (myIndex + 2) % total;
         validTargets = [aliveIds[targetIdx]];
-        logMessage("🎯 Clique em um jogador VERDE (Distância 2) para ATACAR!");
-      } else if (mode === 'beer') {
+        logMessage(`🎯 Resolvendo [🎯2]: Clique no alvo a Distância 2.`);
+      } else if (currentSymbol === '🍺') {
         validTargets = aliveIds;
-        logMessage("🍺 Clique em um jogador VERDE para CURAR +1 PV!");
+        logMessage(`🍺 Resolvendo [🍺]: Clique no jogador para CURAR +1 PV.`);
       }
 
       validTargets.forEach(targetId => {
@@ -565,42 +661,57 @@
       });
     }
 
-    // CLIQUE NO JOGADOR ALVO PARA APLICAR O DANO
     async function handleTargetSelection(targetId, data) {
-      const card = document.getElementById(`p-card-${targetId}`);
-      if (!card || !card.classList.contains("targetable") || !currentMode) return;
-
       const roomRef = ref(db, `rooms/${currentRoomCode}`);
       const target = data.players[targetId];
+      const currentSymbol = activeDicePool.shift();
 
-      if (currentMode === 'attack1' || currentMode === 'attack2') {
+      if (currentSymbol === '🎯1' || currentSymbol === '🎯2') {
         target.hp = Math.max(0, target.hp - 1);
-        if (target.hp === 0) {
-          target.alive = false;
-          logMessage(`💀 ${target.name} FOI ELIMINADO! Papel: ${target.role}`);
+        if (target.hp === 0 && target.alive) {
+          handlePlayerDeath(targetId, data);
         } else {
-          logMessage(`💥 Você atirou em ${target.name}! (-1 PV)`);
+          logMessage(`💥 Dado [${currentSymbol}] usado contra ${target.name}! (-1 PV)`);
         }
-      } else if (currentMode === 'beer') {
+      } else if (currentSymbol === '🍺') {
         target.hp = Math.min(target.maxHp, target.hp + 1);
-        logMessage(`🍺 Você curou ${target.name}! (+1 PV)`);
+        logMessage(`🍺 Dado [🍺] usado em ${target.name}! (+1 PV)`);
       }
 
-      // Resetar marcações de seleção
-      currentMode = null;
-      document.querySelectorAll(".player-card").forEach(el => el.classList.remove("targetable"));
-
       await update(roomRef, { players: data.players });
+      updatePendingUI();
+
+      if (activeDicePool.length > 0) highlightCurrentTarget(data);
+      else {
+        document.querySelectorAll(".player-card").forEach(el => el.classList.remove("targetable"));
+        logMessage("✅ Todos os dados foram consumidos!");
+      }
     }
 
-    // PASSAR TURNO
+    // Processamento de Morte e Anúncio Detalhado
+    function handlePlayerDeath(deadId, data) {
+      data.players[deadId].alive = false;
+      const deadRole = data.players[deadId].role;
+      const deadName = data.players[deadId].name;
+
+      // Calcular contagem de sobreviventes por papel
+      let counts = { "Xerife": 0, "Ajudante": 0, "Fora-da-Lei": 0, "Renegado": 0 };
+      Object.values(data.players).forEach(p => {
+        if (p.alive && counts[p.role] !== undefined) counts[p.role]++;
+      });
+
+      const summary = `Restantes: ${counts['Xerife']} Xerife, ${counts['Ajudante']} Ajudante(s), ${counts['Fora-da-Lei']} Fora(s)-da-Lei, ${counts['Renegado']} Renegado(s).`;
+      logMessage(`💀 ${deadName} FOI ELIMINADO! Função: ${deadRole}. | ${summary}`);
+    }
+
     btnEnd.addEventListener("click", async () => {
       const roomRef = ref(db, `rooms/${currentRoomCode}`);
       const snapshot = await get(roomRef);
       const data = snapshot.val();
 
       keptDiceIndices = [];
-      currentMode = null;
+      activeDicePool = [];
+      updatePendingUI();
       document.querySelectorAll(".player-card").forEach(el => el.classList.remove("targetable"));
 
       let nextIndex = (data.turnIndex + 1) % data.playerOrder.length;
@@ -608,17 +719,11 @@
         nextIndex = (nextIndex + 1) % data.playerOrder.length;
       }
 
-      await update(roomRef, {
-        turnIndex: nextIndex,
-        rollsLeft: 3,
-        diceResults: ["-", "-", "-", "-", "-"]
-      });
+      await update(roomRef, { turnIndex: nextIndex, rollsLeft: 3, diceResults: ["-", "-", "-", "-", "-"] });
     });
 
-    // LÓGICA DO BOT
     async function handleBotTurn(data, botId) {
       logMessage(`🤖 Turno de ${data.players[botId].name}...`);
-      
       setTimeout(async () => {
         const roomRef = ref(db, `rooms/${currentRoomCode}`);
         const faces = ["🎯1", "🎯2", "🍺", "🏹", "💣", "🔫"];
@@ -629,28 +734,44 @@
         const myIndex = aliveIds.indexOf(botId);
         const total = aliveIds.length;
 
-        // Bot aplica ataque no vizinho se tirar Mira
         if (dice.includes("🎯1") && total > 1) {
           const targetId = aliveIds[(myIndex + 1) % total];
           if (targetId !== botId) {
             players[targetId].hp = Math.max(0, players[targetId].hp - 1);
-            if (players[targetId].hp === 0) players[targetId].alive = false;
-            logMessage(`🤖 Bot ${players[botId].name} atacou ${players[targetId].name}!`);
+            if (players[targetId].hp === 0 && players[targetId].alive) handlePlayerDeath(targetId, { players });
+            logMessage(`🤖 Bot ${players[botId].name} usou 🎯1 contra ${players[targetId].name}!`);
           }
         }
 
         let nextIndex = (data.turnIndex + 1) % data.playerOrder.length;
-        while (!players[data.playerOrder[nextIndex]].alive) {
-          nextIndex = (nextIndex + 1) % data.playerOrder.length;
-        }
+        while (!players[data.playerOrder[nextIndex]].alive) nextIndex = (nextIndex + 1) % data.playerOrder.length;
 
-        await update(roomRef, {
-          diceResults: dice,
-          players: players,
-          turnIndex: nextIndex,
-          rollsLeft: 3
-        });
+        await update(roomRef, { diceResults: dice, players, turnIndex: nextIndex, rollsLeft: 3 });
       }, 2000);
+    }
+
+    function showModal(title, playerData) {
+      document.getElementById("modal-title").innerText = title;
+      const body = document.getElementById("modal-body");
+
+      if (playerData) {
+        body.innerHTML = `
+          <p><strong>Personagem:</strong> ${playerData.character || 'Desconhecido'}</p>
+          <p><strong>Habilidade Passiva:</strong> ${playerData.ability || 'Sem habilidade especial.'}</p>
+          <p><strong>Status:</strong> ${playerData.alive ? '❤️ Vivo (' + playerData.hp + '/' + playerData.maxHp + ' PV)' : '💀 Eliminado'}</p>
+        `;
+      } else {
+        body.innerHTML = `
+          <p><strong>Objetivo por Função:</strong></p>
+          <ul>
+            <li><strong>Xerife:</strong> Eliminar todos os Foras da Lei e o Renegado.</li>
+            <li><strong>Ajudante:</strong> Proteger o Xerife.</li>
+            <li><strong>Fora da Lei:</strong> Matar o Xerife.</li>
+            <li><strong>Renegado:</strong> Ser o único sobrevivente.</li>
+          </ul>
+        `;
+      }
+      rulesModal.classList.remove("hidden");
     }
 
     function logMessage(msg) {
