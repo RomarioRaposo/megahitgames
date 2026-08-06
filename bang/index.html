@@ -89,14 +89,14 @@
     /* Alvos Selecionáveis */
     .player-card.targetable {
       border-color: var(--success-color) !important;
-      background-color: rgba(22, 163, 74, 0.15) !important;
-      animation: pulse 1s infinite alternate;
+      background-color: rgba(22, 163, 74, 0.2) !important;
+      animation: pulse 0.8s infinite alternate;
     }
     .player-card.dead { opacity: 0.4; filter: grayscale(100%); cursor: not-allowed; }
 
     @keyframes pulse { 
       0% { transform: scale(1); box-shadow: 0 0 4px var(--success-color); } 
-      100% { transform: scale(1.03); box-shadow: 0 0 12px var(--success-color); } 
+      100% { transform: scale(1.04); box-shadow: 0 0 14px var(--success-color); } 
     }
 
     .player-name { font-weight: 700; font-size: 0.95rem; }
@@ -195,7 +195,7 @@
           <button id="btn-add-bot" class="btn btn-secondary hidden">🤖 + Add Bot</button>
           <button id="btn-start" class="btn btn-success hidden">🚀 Iniciar Partida</button>
           <button id="btn-roll" class="btn btn-primary" disabled>🎲 Rolar (<span id="rolls-left">3</span>)</button>
-          <button id="btn-resolve" class="btn btn-danger hidden">⚡ Resolver Ações</button>
+          <button id="btn-attack" class="btn btn-danger" disabled>⚡ ATACAR / RESOLVER</button>
           <button id="btn-end" class="btn btn-secondary" disabled>Passar Turno</button>
         </div>
 
@@ -221,7 +221,6 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // Personagens Oficiais e Descrições de Habilidade
     const CHARACTERS = [
       { name: "Bart Cassidy", maxHp: 4, ability: "Pode pegar flechas no lugar de sofrer dano." },
       { name: "Paul Regret", maxHp: 3, ability: "Considerado a +1 de distância de todos." },
@@ -236,10 +235,9 @@
     let localPlayerId = "p_" + Math.random().toString(36).substring(2, 7);
     let currentRoomCode = null;
     let keptDiceIndices = [];
-    let pendingActions = []; // Fila de resoluções (ex: ['attack1', 'beer'])
-    let currentAction = null;
+    let currentMode = null; // 'attack1', 'attack2', 'beer'
 
-    // Elementos DOM
+    // DOM
     const lobbyScreen = document.getElementById("lobby-screen");
     const gameScreen = document.getElementById("game-screen");
     const btnCreate = document.getElementById("btn-create");
@@ -247,7 +245,7 @@
     const btnAddBot = document.getElementById("btn-add-bot");
     const btnStart = document.getElementById("btn-start");
     const btnRoll = document.getElementById("btn-roll");
-    const btnResolve = document.getElementById("btn-resolve");
+    const btnAttack = document.getElementById("btn-attack");
     const btnEnd = document.getElementById("btn-end");
 
     document.getElementById("theme-toggle").addEventListener("click", () => document.body.classList.toggle("dark-theme"));
@@ -288,7 +286,6 @@
       listenRoom();
     }
 
-    // Botão Adicionar Bot
     btnAddBot.addEventListener("click", async () => {
       const roomRef = ref(db, `rooms/${currentRoomCode}`);
       const snapshot = await get(roomRef);
@@ -305,7 +302,6 @@
       await update(ref(db, `rooms/${currentRoomCode}`), { playerOrder: [...data.playerOrder, botId] });
     });
 
-    // Iniciar Partida
     btnStart.addEventListener("click", async () => {
       const roomRef = ref(db, `rooms/${currentRoomCode}`);
       const snapshot = await get(roomRef);
@@ -346,7 +342,6 @@
       logMessage("🤠 A partida começou! O Xerife foi revelado.");
     });
 
-    // Ouvinte em Tempo Real do Firebase
     function listenRoom() {
       onValue(ref(db, `rooms/${currentRoomCode}`), (snapshot) => {
         const data = snapshot.val();
@@ -369,13 +364,19 @@
           btnStart.classList.add("hidden");
         }
 
+        // Habilitar controles na minha vez
         btnRoll.disabled = !isMyTurn || data.rollsLeft <= 0;
-        btnEnd.disabled = !isMyTurn || pendingActions.length > 0;
+        
+        // Botão de Atacar fica liberado se tiver feito pelo menos 1 rolagem e for a vez
+        const hasRolledOnce = data.rollsLeft < 3;
+        btnAttack.disabled = !isMyTurn || !hasRolledOnce;
+        btnEnd.disabled = !isMyTurn || !hasRolledOnce;
+
         document.getElementById("rolls-left").innerText = data.rollsLeft;
 
         if (data.status === "playing") {
           document.getElementById("turn-status").innerText = isMyTurn ? 
-            (pendingActions.length > 0 ? "🎯 Clique em 'Resolver Ações' para atuar no alvo!" : "🎲 Sua vez! Role os dados.") : 
+            "🎲 SUA VEZ: Role os dados ou clique em '⚡ ATACAR / RESOLVER' para escolher o alvo!" : 
             `Aguardando jogada de: ${activePlayer?.name}`;
 
           if (activePlayer?.isBot && data.host === localPlayerId) {
@@ -385,7 +386,6 @@
       });
     }
 
-    // Renderizar Tabuleiro
     function renderBoard(data) {
       const board = document.getElementById("players-board");
       board.innerHTML = "";
@@ -419,7 +419,6 @@
       });
     }
 
-    // Renderizar Dados
     function renderDice(dice) {
       const container = document.getElementById("dice-container");
       container.innerHTML = "";
@@ -446,7 +445,7 @@
       });
     }
 
-    // Rolar Dados
+    // ROLAR DADOS
     btnRoll.addEventListener("click", async () => {
       const roomRef = ref(db, `rooms/${currentRoomCode}`);
       const snapshot = await get(roomRef);
@@ -461,7 +460,6 @@
         }
       }
 
-      // Processar Flechas imediatas da rolagem
       let newArrowPool = data.arrowPool;
       let activePlayer = { ...data.players[localPlayerId] };
 
@@ -470,12 +468,11 @@
           if (newArrowPool > 0) {
             newArrowPool--;
             activePlayer.arrows++;
-            logMessage(`🏹 ${activePlayer.name} pegou uma flecha da reserva!`);
+            logMessage(`🏹 Você pegou uma flecha da reserva!`);
           }
         }
       });
 
-      // Ataque Indígena se esgotar o banco
       if (newArrowPool <= 0) {
         logMessage("🚨 Os Índios Atacaram! Todos perderam vida pelas suas flechas.");
         Object.keys(data.players).forEach(pId => {
@@ -487,7 +484,6 @@
         activePlayer = data.players[localPlayerId];
       }
 
-      // Checar Dinamite
       const dynamites = newDice.filter(d => d === "💣").length;
       let newRollsLeft = data.rollsLeft - 1;
 
@@ -506,22 +502,16 @@
         arrowPool: newArrowPool,
         players: data.players
       });
-
-      if (newRollsLeft === 0) {
-        btnResolve.classList.remove("hidden");
-      }
     });
 
-    // Mapear Ações dos Dados para a Fila de Resolução
-    btnResolve.addEventListener("click", async () => {
+    // BOTÃO ATACAR / RESOLVER DADOS
+    btnAttack.addEventListener("click", async () => {
       const roomRef = ref(db, `rooms/${currentRoomCode}`);
       const snapshot = await get(roomRef);
       const data = snapshot.val();
       const dice = data.diceResults;
 
-      pendingActions = [];
-
-      // Gatling (3x)
+      // Resolver Gatling (3x)
       if (dice.filter(d => d === "🔫").length >= 3) {
         logMessage("🔫 METRALHADORA GATLING! Todos os outros perderam 1 PV.");
         Object.keys(data.players).forEach(pId => {
@@ -532,38 +522,21 @@
         });
         data.arrowPool += data.players[localPlayerId].arrows;
         data.players[localPlayerId].arrows = 0;
+        await update(roomRef, { players: data.players, arrowPool: data.arrowPool });
       }
 
-      // Adicionar ações pendentes de Miras e Cerveja
-      dice.forEach(d => {
-        if (d === "🎯1" || d === "🎯2" || d === "🍺") pendingActions.push(d);
-      });
-
-      btnResolve.classList.add("hidden");
-      await update(roomRef, { players: data.players, arrowPool: data.arrowPool });
-
-      processNextAction(data);
+      // Ativar seleção no tabuleiro baseada nos dados tirados
+      if (dice.includes("🎯1")) highlightTargets('attack1', data);
+      else if (dice.includes("🎯2")) highlightTargets('attack2', data);
+      else if (dice.includes("🍺")) highlightTargets('beer', data);
+      else logMessage("Você não tem dados de Mira (🎯) ou Cerveja (🍺) para resolver.");
     });
 
-    // Processar Próxima Ação da Fila
-    function processNextAction(data) {
-      if (pendingActions.length === 0) {
-        currentAction = null;
-        document.querySelectorAll(".player-card").forEach(el => el.classList.remove("targetable"));
-        logMessage("Ações resolvidas! Você já pode passar a vez.");
-        btnEnd.disabled = false;
-        return;
-      }
-
-      currentAction = pendingActions.shift();
-      highlightValidTargets(currentAction, data);
-    }
-
-    // Calcular Posições e Destacar Alvos Válidos na Mesa Circular
-    function highlightValidTargets(action, data) {
+    // Destacar Alvos Elegíveis no Tabuleiro
+    function highlightTargets(mode, data) {
+      currentMode = mode;
       document.querySelectorAll(".player-card").forEach(el => el.classList.remove("targetable"));
 
-      // Filtrar apenas jogadores vivos
       const aliveIds = data.playerOrder.filter(id => data.players[id].alive);
       const myIndex = aliveIds.indexOf(localPlayerId);
       const total = aliveIds.length;
@@ -572,69 +545,63 @@
 
       let validTargets = [];
 
-      if (action === "🎯1") {
+      if (mode === 'attack1') {
         const left = aliveIds[(myIndex - 1 + total) % total];
         const right = aliveIds[(myIndex + 1) % total];
         validTargets = [left, right];
-        logMessage("🎯 Clique em um jogador a Distância 1 para ATACAR!");
-      } else if (action === "🎯2") {
-        if (total <= 2) {
-          // Se só restam 2 vivos, distância 2 equivale ao único rival
-          validTargets = [aliveIds[(myIndex + 1) % total]];
-        } else {
-          const left2 = aliveIds[(myIndex - 2 + total) % total];
-          const right2 = aliveIds[(myIndex + 2) % total];
-          validTargets = [left2, right2];
-        }
-        logMessage("🎯 Clique em um jogador a Distância 2 para ATACAR!");
-      } else if (action === "🍺") {
-        validTargets = aliveIds; // Pode curar a si mesmo ou a um aliado
-        logMessage("🍺 Clique em um jogador para CURAR +1 PV!");
+        logMessage("🎯 Clique em um jogador VERDE (Distância 1) para ATACAR!");
+      } else if (mode === 'attack2') {
+        const targetIdx = total <= 2 ? (myIndex + 1) % total : (myIndex + 2) % total;
+        validTargets = [aliveIds[targetIdx]];
+        logMessage("🎯 Clique em um jogador VERDE (Distância 2) para ATACAR!");
+      } else if (mode === 'beer') {
+        validTargets = aliveIds;
+        logMessage("🍺 Clique em um jogador VERDE para CURAR +1 PV!");
       }
 
-      // Destacar os cards no DOM
       validTargets.forEach(targetId => {
         const card = document.getElementById(`p-card-${targetId}`);
         if (card) card.classList.add("targetable");
       });
     }
 
-    // Clique na Carta para Aplicar Dano ou Cura
+    // CLIQUE NO JOGADOR ALVO PARA APLICAR O DANO
     async function handleTargetSelection(targetId, data) {
       const card = document.getElementById(`p-card-${targetId}`);
-      if (!card || !card.classList.contains("targetable") || !currentAction) return;
+      if (!card || !card.classList.contains("targetable") || !currentMode) return;
 
       const roomRef = ref(db, `rooms/${currentRoomCode}`);
       const target = data.players[targetId];
 
-      if (currentAction === "🎯1" || currentAction === "🎯2") {
+      if (currentMode === 'attack1' || currentMode === 'attack2') {
         target.hp = Math.max(0, target.hp - 1);
         if (target.hp === 0) {
           target.alive = false;
           logMessage(`💀 ${target.name} FOI ELIMINADO! Papel: ${target.role}`);
         } else {
-          logMessage(`💥 Você atacou ${target.name}! (-1 PV)`);
+          logMessage(`💥 Você atirou em ${target.name}! (-1 PV)`);
         }
-      } else if (currentAction === "🍺") {
+      } else if (currentMode === 'beer') {
         target.hp = Math.min(target.maxHp, target.hp + 1);
         logMessage(`🍺 Você curou ${target.name}! (+1 PV)`);
       }
 
-      await update(roomRef, { players: data.players });
+      // Resetar marcações de seleção
+      currentMode = null;
+      document.querySelectorAll(".player-card").forEach(el => el.classList.remove("targetable"));
 
-      // Avançar para a próxima ação de dado pendente
-      processNextAction(data);
+      await update(roomRef, { players: data.players });
     }
 
-    // Passar o Turno
+    // PASSAR TURNO
     btnEnd.addEventListener("click", async () => {
       const roomRef = ref(db, `rooms/${currentRoomCode}`);
       const snapshot = await get(roomRef);
       const data = snapshot.val();
 
       keptDiceIndices = [];
-      pendingActions = [];
-      currentAction = null;
+      currentMode = null;
+      document.querySelectorAll(".player-card").forEach(el => el.classList.remove("targetable"));
 
       let nextIndex = (data.turnIndex + 1) % data.playerOrder.length;
       while (!data.players[data.playerOrder[nextIndex]].alive) {
@@ -648,7 +615,7 @@
       });
     });
 
-    // Lógica do Bot (Ataca o Xerife ou Foras da Lei)
+    // LÓGICA DO BOT
     async function handleBotTurn(data, botId) {
       logMessage(`🤖 Turno de ${data.players[botId].name}...`);
       
@@ -662,7 +629,7 @@
         const myIndex = aliveIds.indexOf(botId);
         const total = aliveIds.length;
 
-        // Bot resolve dano básico no vizinho
+        // Bot aplica ataque no vizinho se tirar Mira
         if (dice.includes("🎯1") && total > 1) {
           const targetId = aliveIds[(myIndex + 1) % total];
           if (targetId !== botId) {
