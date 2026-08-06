@@ -518,31 +518,40 @@
       const roomRef = ref(db, `rooms/${currentRoomCode}`);
       const snapshot = await get(roomRef);
       const data = snapshot.val();
-      const count = Object.keys(data.players || {}).length;
+      const currentPlayers = data.players || {};
+      const count = Object.keys(currentPlayers).length;
       if (count >= 8) return alert("Máximo 8 jogadores!");
 
       const botId = "bot_" + Math.random().toString(36).substring(2, 6);
-      const cleanOrder = [...new Set([...(data.playerOrder || []), botId])];
+      const updatedOrder = [...new Set([...(data.playerOrder || []), botId])];
       
-      await update(ref(db, `rooms/${currentRoomCode}/players/${botId}`), {
-        name: `Bot ${count + 1}`, hp: 7, maxHp: 7, arrows: 0, role: "Aguardando", isBot: true, alive: true
-      });
+      const newBot = {
+        name: `Bot ${count + 1}`,
+        hp: 7,
+        maxHp: 7,
+        arrows: 0,
+        role: "Aguardando",
+        isBot: true,
+        alive: true
+      };
+
+      await update(ref(db, `rooms/${currentRoomCode}/players/${botId}`), newBot);
       await update(ref(db, `rooms/${currentRoomCode}`), { 
-        playerOrder: cleanOrder,
+        playerOrder: updatedOrder,
         lastActivity: Date.now()
       });
     });
 
+    // INÍCIO DE PARTIDA CORRIGIDO: SEM DESCARTE DE BOTS
     btnStart.addEventListener("click", async () => {
       const roomRef = ref(db, `rooms/${currentRoomCode}`);
       const snapshot = await get(roomRef);
       const data = snapshot.val();
 
-      // Deduplicação estrita de jogadores
-      const playerKeys = [...new Set(data.playerOrder || [])];
+      const playersObj = data.players || {};
+      const playerKeys = Object.keys(playersObj);
       const count = playerKeys.length;
 
-      // Mapeamento EXATO da quantidade de papéis por número de jogadores (2 a 8)
       const rolesByCount = {
         2: ["Xerife", "Fora-da-Lei"],
         3: ["Xerife", "Fora-da-Lei", "Renegado"],
@@ -565,7 +574,7 @@
         const maxHp = char.maxHp + (isSheriff ? 2 : 0);
 
         updatedPlayers[id] = {
-          ...data.players[id],
+          ...playersObj[id],
           character: char.name,
           ability: char.ability,
           role: role,
@@ -580,7 +589,10 @@
         status: "playing", 
         players: updatedPlayers,
         playerOrder: playerKeys,
+        turnIndex: 0,
         arrowPool: 9,
+        diceResults: ["-", "-", "-", "-", "-"],
+        rollsLeft: 3,
         lastActivity: Date.now()
       });
       logMessage("🤠 A partida começou! O Xerife foi revelado.");
@@ -591,7 +603,6 @@
         const data = snapshot.val();
         if (!data) { alert("Sala encerrada!"); location.reload(); return; }
 
-        // MUDANÇA DE TURNO DETECTADA: RESET TOTAL DE ESTADOS LOCAIS
         if (previousTurnIndex !== null && previousTurnIndex !== data.turnIndex) {
           keptDiceIndices = [];
           activeDicePool = [];
@@ -603,8 +614,8 @@
         renderBoard(data);
         renderDice(data.diceResults);
 
-        const activePlayerId = data.playerOrder[data.turnIndex];
-        const activePlayer = data.players[activePlayerId];
+        const activePlayerId = data.playerOrder ? data.playerOrder[data.turnIndex] : null;
+        const activePlayer = activePlayerId && data.players ? data.players[activePlayerId] : null;
         const isMyTurn = !isSpectator && activePlayerId === localPlayerId && data.status === "playing";
 
         document.getElementById("arrow-count").innerText = data.arrowPool;
@@ -625,10 +636,10 @@
 
         if (data.status === "playing") {
           document.getElementById("turn-status").innerText = isSpectator ? 
-            `👀 MODO ESPECTADOR: Rodada de ${activePlayer?.name}` :
+            `👀 MODO ESPECTADOR: Rodada de ${activePlayer?.name || 'Bot'}` :
             (isMyTurn ? 
               (activeDicePool.length > 0 ? "🎯 Clique na carta verde do alvo!" : "🎲 Sua vez! Role dados ou clique em 'RESOLVER DADOS'.") : 
-              `Aguardando jogada de: ${activePlayer?.name}`);
+              `Aguardando jogada de: ${activePlayer?.name || 'Bot'}`);
 
           if (activePlayer?.isBot && data.host === localPlayerId && !isSpectator) handleBotTurn(data, activePlayerId);
         }
@@ -643,7 +654,7 @@
 
       Object.entries(data.players || {}).forEach(([id, player]) => {
         const isMe = id === localPlayerId;
-        const isActive = id === data.playerOrder[data.turnIndex];
+        const isActive = data.playerOrder && data.playerOrder[data.turnIndex] === id;
         const roleText = (isMe || player.role === "Xerife" || !player.alive) ? player.role : "???";
 
         const div = document.createElement("div");
