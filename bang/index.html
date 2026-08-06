@@ -75,8 +75,11 @@
     .btn-danger { background-color: var(--danger-color); color: #fff; }
     .btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
-    .rooms-list { margin-top: 0.75rem; border-top: 1px solid var(--border-color); padding-top: 0.75rem; }
-    .room-item { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 0.4rem; font-size: 0.85rem; }
+    /* ESTILOS DA BUSCA DE SALAS CATEGORIZADA */
+    .rooms-list { margin-top: 0.75rem; border-top: 1px solid var(--border-color); padding-top: 0.75rem; text-align: left; }
+    .room-section-title { font-size: 0.8rem; font-weight: 800; color: var(--primary-color); margin: 0.6rem 0 0.3rem 0; text-transform: uppercase; }
+    .room-item { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 0.4rem; font-size: 0.8rem; background: rgba(0,0,0,0.02); }
+    .room-item.finished { border-color: var(--border-color); opacity: 0.8; }
 
     .status-bar { display: flex; justify-content: space-between; align-items: center; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color); margin-bottom: 0.75rem; font-size: 0.85rem; }
     .badge { background: var(--border-color); padding: 0.2rem 0.4rem; border-radius: 6px; font-weight: 700; }
@@ -206,7 +209,6 @@
       </div>
 
       <div id="rooms-panel" class="rooms-list hidden">
-        <h3 style="font-size:0.85rem; margin-bottom:0.4rem;">Salas Disponíveis:</h3>
         <div id="rooms-container"></div>
       </div>
     </section>
@@ -223,7 +225,6 @@
         🏹 Flechas na Reserva: <span id="arrow-count">9</span> / 9
       </div>
 
-      <!-- MESA COM GRID 3 POR LINHA NO MOBILE -->
       <div id="players-board" class="players-grid"></div>
 
       <div class="legend-box">
@@ -257,7 +258,6 @@
     </section>
   </main>
 
-  <!-- MODAL / POPUP -->
   <div id="rules-modal" class="modal-overlay hidden">
     <div class="modal-content">
       <h3 id="modal-title">📜 Regras</h3>
@@ -327,36 +327,115 @@
     btnCreate.addEventListener("click", () => accessRoom(true));
     btnJoin.addEventListener("click", () => accessRoom(false));
 
-    // Buscar Salas Abertas + Pedir Nome ao Clicar
+    // BUSCA DE SALAS CATEGORIZADA E LIMPEZA DE INATIVIDADE (10 MINUTOS)
     btnSearchRooms.addEventListener("click", async () => {
       const roomsRef = ref(db, "rooms");
       const snapshot = await get(roomsRef);
       roomsContainer.innerHTML = "";
 
       if (!snapshot.exists()) {
-        roomsContainer.innerHTML = "<p style='font-size:0.8rem;'>Nenhuma sala aberta no momento.</p>";
+        roomsContainer.innerHTML = "<p style='font-size:0.8rem; text-align:center;'>Nenhuma sala encontrada.</p>";
+        roomsPanel.classList.remove("hidden");
+        return;
+      }
+
+      const allRooms = snapshot.val();
+      const now = Date.now();
+      const INACTIVITY_LIMIT = 10 * 60 * 1000; // 10 minutos em milissegundos
+
+      let openRooms = [];
+      let playingRooms = [];
+      let finishedRooms = [];
+
+      // Processar e Limpar Salas Inativas
+      for (const [code, data] of Object.entries(allRooms)) {
+        const lastAct = data.lastActivity || 0;
+        
+        // Deleta automaticamente do Firebase se inativa por mais de 10 minutos
+        if (now - lastAct > INACTIVITY_LIMIT) {
+          await remove(ref(db, `rooms/${code}`));
+          continue;
+        }
+
+        if (data.status === "waiting") openRooms.push({ code, data });
+        else if (data.status === "playing") playingRooms.push({ code, data });
+        else if (data.status === "finished") finishedRooms.push({ code, data });
+      }
+
+      let html = "";
+
+      // 1. SALAS POSSÍVEIS DE ENTRADA (NO TOPO)
+      html += `<div class="room-section-title">🟢 Salas Abertas (Entrada Permitida)</div>`;
+      if (openRooms.length === 0) {
+        html += `<p style='font-size:0.75rem; color:var(--text-muted);'>Nenhuma sala aberta para entrar.</p>`;
       } else {
-        Object.entries(snapshot.val()).forEach(([code, data]) => {
+        openRooms.forEach(({ code, data }) => {
           const count = Object.keys(data.players || {}).length;
-          const statusTxt = data.status === "playing" ? " (Em Andamento)" : ` (${count}/8 jog.)`;
-          const div = document.createElement("div");
-          div.className = "room-item";
-          div.innerHTML = `<span><strong>${code}</strong> ${statusTxt}</span> <button class="btn btn-primary" style="padding:0.25rem 0.5rem; font-size:0.75rem;">Entrar</button>`;
-          div.querySelector("button").addEventListener("click", () => {
-            let nameInput = document.getElementById("player-name");
-            if (!nameInput.value.trim()) {
-              let typedName = prompt("Digite seu apelido antes de entrar na sala:", "Pistoleiro");
-              if (!typedName) return;
-              nameInput.value = typedName.trim();
-            }
-            document.getElementById("room-code").value = code;
-            accessRoom(false);
-          });
-          roomsContainer.appendChild(div);
+          html += `
+            <div class="room-item">
+              <span><strong>${code}</strong> (${count}/8 jog.)</span>
+              <button class="btn btn-primary btn-join-room" data-code="${code}" style="padding:0.25rem 0.5rem; font-size:0.75rem;">Entrar</button>
+            </div>`;
         });
       }
+
+      // 2. ATÉ 5 SALAS EM ANDAMENTO (MODO ESPECTADOR)
+      html += `<div class="room-section-title" style="margin-top:0.8rem;">🟡 Em Andamento (Espectador)</div>`;
+      const topPlaying = playingRooms.slice(0, 5);
+      if (topPlaying.length === 0) {
+        html += `<p style='font-size:0.75rem; color:var(--text-muted);'>Nenhuma partida em andamento.</p>`;
+      } else {
+        topPlaying.forEach(({ code, data }) => {
+          const count = Object.keys(data.players || {}).length;
+          html += `
+            <div class="room-item">
+              <span><strong>${code}</strong> (${count} jog. na mesa)</span>
+              <button class="btn btn-secondary btn-join-room" data-code="${code}" style="padding:0.25rem 0.5rem; font-size:0.75rem;">Assistir</button>
+            </div>`;
+        });
+      }
+
+      // 3. ATÉ 5 SALAS ENCERRADAS (COM STATUS E DATA)
+      html += `<div class="room-section-title" style="margin-top:0.8rem;">🔴 Encerradas Recentemente</div>`;
+      const topFinished = finishedRooms.slice(-5).reverse(); // Pega as 5 mais recentes
+      if (topFinished.length === 0) {
+        html += `<p style='font-size:0.75rem; color:var(--text-muted);'>Nenhuma partida encerrada.</p>`;
+      } else {
+        topFinished.forEach(({ code, data }) => {
+          const winnerText = data.winner || "Finalizada";
+          const dateTxt = data.finishedAt ? new Date(data.finishedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "Hoje";
+          html += `
+            <div class="room-item finished">
+              <span><strong>${code}</strong> - ${winnerText}</span>
+              <small style="color:var(--text-muted);">${dateTxt}</small>
+            </div>`;
+        });
+      }
+
+      roomsContainer.innerHTML = html;
       roomsPanel.classList.remove("hidden");
+
+      // Bind dos botões dinâmicos
+      document.querySelectorAll(".btn-join-room").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          const code = e.target.getAttribute("data-code");
+          let nameInput = document.getElementById("player-name");
+          if (!nameInput.value.trim()) {
+            let typedName = prompt("Digite seu apelido antes de entrar na sala:", "Pistoleiro");
+            if (!typedName) return;
+            nameInput.value = typedName.trim();
+          }
+          document.getElementById("room-code").value = code;
+          accessRoom(false);
+        });
+      });
     });
+
+    async function updateActivity() {
+      if (currentRoomCode) {
+        await update(ref(db, `rooms/${currentRoomCode}`), { lastActivity: Date.now() });
+      }
+    }
 
     async function accessRoom(isHost) {
       let nameInput = document.getElementById("player-name");
@@ -386,7 +465,7 @@
 
         await set(roomRef, {
           status: "waiting", host: localPlayerId, turnIndex: 0, playerOrder: [localPlayerId],
-          rollsLeft: 3, diceResults: ["-", "-", "-", "-", "-"], arrowPool: 9,
+          rollsLeft: 3, diceResults: ["-", "-", "-", "-", "-"], arrowPool: 9, lastActivity: Date.now(),
           players: { [localPlayerId]: { name, hp: 7, maxHp: 7, arrows: 0, role: "Aguardando", isBot: false, alive: true } }
         });
       } else {
@@ -401,7 +480,10 @@
           await update(ref(db, `rooms/${code}/players/${localPlayerId}`), {
             name, hp: 7, maxHp: 7, arrows: 0, role: "Aguardando", isBot: false, alive: true
           });
-          await update(ref(db, `rooms/${code}`), { playerOrder: [...(data.playerOrder || []), localPlayerId] });
+          await update(ref(db, `rooms/${code}`), { 
+            playerOrder: [...(data.playerOrder || []), localPlayerId],
+            lastActivity: Date.now()
+          });
         }
       }
 
@@ -429,7 +511,10 @@
       await update(ref(db, `rooms/${currentRoomCode}/players/${botId}`), {
         name: `Bot ${count + 1}`, hp: 7, maxHp: 7, arrows: 0, role: "Aguardando", isBot: true, alive: true
       });
-      await update(ref(db, `rooms/${currentRoomCode}`), { playerOrder: [...data.playerOrder, botId] });
+      await update(ref(db, `rooms/${currentRoomCode}`), { 
+        playerOrder: [...data.playerOrder, botId],
+        lastActivity: Date.now()
+      });
     });
 
     btnStart.addEventListener("click", async () => {
@@ -468,7 +553,12 @@
         };
       });
 
-      await update(roomRef, { status: "playing", players: updatedPlayers, arrowPool: 9 });
+      await update(roomRef, { 
+        status: "playing", 
+        players: updatedPlayers, 
+        arrowPool: 9,
+        lastActivity: Date.now()
+      });
       logMessage("🤠 A partida começou! O Xerife foi revelado.");
     });
 
@@ -631,11 +721,11 @@
         diceResults: newDice,
         rollsLeft: newRollsLeft,
         arrowPool: newArrowPool,
-        players: data.players
+        players: data.players,
+        lastActivity: Date.now()
       });
     });
 
-    // RESOLVER DADOS (E CORREÇÃO DO SEM AÇÕES ELEGÍVEIS)
     btnResolve.addEventListener("click", async () => {
       if (isSpectator || hasResolvedThisTurn) return;
       hasResolvedThisTurn = true;
@@ -655,14 +745,13 @@
         });
         data.arrowPool += data.players[localPlayerId].arrows;
         data.players[localPlayerId].arrows = 0;
-        await update(roomRef, { players: data.players, arrowPool: data.arrowPool });
+        await update(roomRef, { players: data.players, arrowPool: data.arrowPool, lastActivity: Date.now() });
       }
 
       activeDicePool = dice.filter(d => d === "🎯1" || d === "🎯2" || d === "🍺");
       
-      // SE NÃO HOUVER NENHUM DADO DE AÇÃO (EX: APENAS DADOS SEM ALVO), PASSA A VEZ AUTOMÁTICO SEM TRAVAR
       if (activeDicePool.length === 0) {
-        logMessage("Nenhum dado com ação de alvo para escolher. Passando o turno...");
+        logMessage("Sem dados para resolver. Passando a vez automaticamente...");
         return passTurnAutomatically(data);
       }
 
@@ -727,7 +816,7 @@
         logMessage(`🍺 Dado [🍺] usado em ${target.name}! (+1 PV)`);
       }
 
-      await update(roomRef, { players: data.players });
+      await update(roomRef, { players: data.players, lastActivity: Date.now() });
       updatePendingUI();
 
       if (activeDicePool.length > 0) {
@@ -752,7 +841,7 @@
         nextIndex = (nextIndex + 1) % data.playerOrder.length;
       }
 
-      await update(roomRef, { turnIndex: nextIndex, rollsLeft: 3, diceResults: ["-", "-", "-", "-", "-"] });
+      await update(roomRef, { turnIndex: nextIndex, rollsLeft: 3, diceResults: ["-", "-", "-", "-", "-"], lastActivity: Date.now() });
     }
 
     function handlePlayerDeath(deadId, attackerName, data) {
@@ -773,7 +862,8 @@
       }
     }
 
-    function checkGameEnd(data) {
+    // REGISTRO DO VENCEDOR E DATA NO ENCERRAMENTO DA SALA
+    async function checkGameEnd(data) {
       if (gameEnded || data.status !== "playing") return;
 
       let aliveSheriff = false;
@@ -788,13 +878,27 @@
         }
       });
 
+      let winnerStatus = null;
+
       if (!aliveSheriff) {
         gameEnded = true;
+        winnerStatus = "Foras-da-Lei venceram";
         showModal("🏆 FIM DE JOGO!", null, "<p style='text-align:center;'><strong>Os Foras-da-Lei Venceram!</strong><br>O Xerife foi mordido pela poeira!</p>");
       } 
       else if (aliveOutlaws === 0 && aliveRenegades === 0) {
         gameEnded = true;
-        showModal("🏆 VOCÊ VENCEU!", null, "<p style='text-align:center;'><strong>Você domina o Faroeste!</strong><br>A ordem foi restaurada no Velho Oeste!</p>");
+        winnerStatus = "Xerife venceu";
+        showModal("🏆 VOCÊ VENCEU!", null, "<p style='text-align:center;'><strong>O Xerife & Ajudantes Venceram!</strong><br>A ordem foi restaurada no Velho Oeste!</p>");
+      }
+
+      if (winnerStatus) {
+        const roomRef = ref(db, `rooms/${currentRoomCode}`);
+        await update(roomRef, {
+          status: "finished",
+          winner: winnerStatus,
+          finishedAt: Date.now(),
+          lastActivity: Date.now()
+        });
       }
     }
 
@@ -829,7 +933,7 @@
         let nextIndex = (data.turnIndex + 1) % data.playerOrder.length;
         while (!players[data.playerOrder[nextIndex]].alive) nextIndex = (nextIndex + 1) % data.playerOrder.length;
 
-        await update(roomRef, { diceResults: dice, players, turnIndex: nextIndex, rollsLeft: 3 });
+        await update(roomRef, { diceResults: dice, players, turnIndex: nextIndex, rollsLeft: 3, lastActivity: Date.now() });
       }, 2000);
     }
 
