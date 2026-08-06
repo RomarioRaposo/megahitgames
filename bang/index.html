@@ -75,7 +75,6 @@
     .btn-danger { background-color: var(--danger-color); color: #fff; }
     .btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
-    /* ESTILOS DA BUSCA DE SALAS CATEGORIZADA */
     .rooms-list { margin-top: 0.75rem; border-top: 1px solid var(--border-color); padding-top: 0.75rem; text-align: left; }
     .room-section-title { font-size: 0.8rem; font-weight: 800; color: var(--primary-color); margin: 0.6rem 0 0.3rem 0; text-transform: uppercase; }
     .room-item { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 0.4rem; font-size: 0.8rem; background: rgba(0,0,0,0.02); }
@@ -84,7 +83,6 @@
     .status-bar { display: flex; justify-content: space-between; align-items: center; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color); margin-bottom: 0.75rem; font-size: 0.85rem; }
     .badge { background: var(--border-color); padding: 0.2rem 0.4rem; border-radius: 6px; font-weight: 700; }
 
-    /* LAYOUT DA MESA: 3 POR LINHA NO MOBILE */
     .players-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -106,7 +104,6 @@
     }
     .player-card.active-turn { border-color: var(--primary-color); box-shadow: 0 0 10px rgba(217, 119, 6, 0.4); }
     
-    /* DESTAQUE DO JOGADOR LOCAL ("EU") */
     .player-card.is-me {
       border: 2px solid #f59e0b !important;
       background: linear-gradient(135deg, rgba(217, 119, 6, 0.18), rgba(245, 158, 11, 0.05)) !important;
@@ -218,7 +215,10 @@
       <div class="status-bar">
         <div>Sala: <span id="display-room-code" class="badge">---</span></div>
         <div>Função: <span id="display-role" class="badge">???</span></div>
-        <button id="btn-close-room" class="btn btn-danger hidden" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">🔴 Fechar Sala</button>
+        <div style="display:flex; gap:0.3rem;">
+          <button id="btn-leave-room" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">🚪 Sair</button>
+          <button id="btn-close-room" class="btn btn-danger hidden" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">🔴 Fechar</button>
+        </div>
       </div>
 
       <div class="arrow-bank">
@@ -297,7 +297,10 @@
     let localPlayerId = "p_" + Math.random().toString(36).substring(2, 7);
     let currentRoomCode = null;
     let keptDiceIndices = [];
-    let activeDicePool = [];
+    
+    // Objeto Estruturado para Ações com Rastreamento de ID NÚNICO
+    let activeDicePool = []; 
+
     let isSpectator = false;
     let hasResolvedThisTurn = false;
     let gameEnded = false;
@@ -315,6 +318,7 @@
     const btnRoll = document.getElementById("btn-roll");
     const btnResolve = document.getElementById("btn-resolve");
     const btnEnd = document.getElementById("btn-end");
+    const btnLeaveRoom = document.getElementById("btn-leave-room");
     const btnCloseRoom = document.getElementById("btn-close-room");
     const rulesModal = document.getElementById("rules-modal");
     const btnHowToPlay = document.getElementById("btn-how-to-play");
@@ -327,7 +331,6 @@
     btnCreate.addEventListener("click", () => accessRoom(true));
     btnJoin.addEventListener("click", () => accessRoom(false));
 
-    // BUSCA DE SALAS CATEGORIZADA E LIMPEZA DE INATIVIDADE (10 MINUTOS)
     btnSearchRooms.addEventListener("click", async () => {
       const roomsRef = ref(db, "rooms");
       const snapshot = await get(roomsRef);
@@ -341,17 +344,15 @@
 
       const allRooms = snapshot.val();
       const now = Date.now();
-      const INACTIVITY_LIMIT = 10 * 60 * 1000; // 10 minutos em milissegundos
+      const INACTIVITY_LIMIT = 10 * 60 * 1000;
 
       let openRooms = [];
       let playingRooms = [];
       let finishedRooms = [];
 
-      // Processar e Limpar Salas Inativas
       for (const [code, data] of Object.entries(allRooms)) {
         const lastAct = data.lastActivity || 0;
         
-        // Deleta automaticamente do Firebase se inativa por mais de 10 minutos
         if (now - lastAct > INACTIVITY_LIMIT) {
           await remove(ref(db, `rooms/${code}`));
           continue;
@@ -364,7 +365,6 @@
 
       let html = "";
 
-      // 1. SALAS POSSÍVEIS DE ENTRADA (NO TOPO)
       html += `<div class="room-section-title">🟢 Salas Abertas (Entrada Permitida)</div>`;
       if (openRooms.length === 0) {
         html += `<p style='font-size:0.75rem; color:var(--text-muted);'>Nenhuma sala aberta para entrar.</p>`;
@@ -379,7 +379,6 @@
         });
       }
 
-      // 2. ATÉ 5 SALAS EM ANDAMENTO (MODO ESPECTADOR)
       html += `<div class="room-section-title" style="margin-top:0.8rem;">🟡 Em Andamento (Espectador)</div>`;
       const topPlaying = playingRooms.slice(0, 5);
       if (topPlaying.length === 0) {
@@ -395,9 +394,8 @@
         });
       }
 
-      // 3. ATÉ 5 SALAS ENCERRADAS (COM STATUS E DATA)
       html += `<div class="room-section-title" style="margin-top:0.8rem;">🔴 Encerradas Recentemente</div>`;
-      const topFinished = finishedRooms.slice(-5).reverse(); // Pega as 5 mais recentes
+      const topFinished = finishedRooms.slice(-5).reverse();
       if (topFinished.length === 0) {
         html += `<p style='font-size:0.75rem; color:var(--text-muted);'>Nenhuma partida encerrada.</p>`;
       } else {
@@ -415,7 +413,6 @@
       roomsContainer.innerHTML = html;
       roomsPanel.classList.remove("hidden");
 
-      // Bind dos botões dinâmicos
       document.querySelectorAll(".btn-join-room").forEach(btn => {
         btn.addEventListener("click", (e) => {
           const code = e.target.getAttribute("data-code");
@@ -430,12 +427,6 @@
         });
       });
     });
-
-    async function updateActivity() {
-      if (currentRoomCode) {
-        await update(ref(db, `rooms/${currentRoomCode}`), { lastActivity: Date.now() });
-      }
-    }
 
     async function accessRoom(isHost) {
       let nameInput = document.getElementById("player-name");
@@ -493,6 +484,30 @@
       listenRoom();
     }
 
+    // SAIR DA SALA E REEMPLAZAR POR BOT SE ESTIVER EM JOGO
+    btnLeaveRoom.addEventListener("click", async () => {
+      if (!currentRoomCode) return;
+      const roomRef = ref(db, `rooms/${currentRoomCode}`);
+      const snapshot = await get(roomRef);
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        if (data.status === "playing" && data.players[localPlayerId]) {
+          // Converte o jogador humano em BOT para não quebrar a partida
+          await update(ref(db, `rooms/${currentRoomCode}/players/${localPlayerId}`), {
+            name: `${data.players[localPlayerId].name} (BOT)`,
+            isBot: true
+          });
+          logMessage(`🚪 ${data.players[localPlayerId].name} saiu e foi substituído por um BOT.`);
+        } else if (data.status === "waiting") {
+          // Remove da sala se ainda estiver no lobby
+          delete data.players[localPlayerId];
+          const updatedOrder = (data.playerOrder || []).filter(id => id !== localPlayerId);
+          await update(roomRef, { players: data.players, playerOrder: updatedOrder });
+        }
+      }
+      location.reload();
+    });
+
     btnCloseRoom.addEventListener("click", async () => {
       if (confirm("Fechar e encerrar a sala?")) {
         await remove(ref(db, `rooms/${currentRoomCode}`));
@@ -517,6 +532,7 @@
       });
     });
 
+    // DISTRIBUIÇÃO DINÂMICA DE PAPÉIS (EVITA SUMIR BOTS)
     btnStart.addEventListener("click", async () => {
       const roomRef = ref(db, `rooms/${currentRoomCode}`);
       const snapshot = await get(roomRef);
@@ -525,18 +541,21 @@
       const playerKeys = data.playerOrder;
       const count = playerKeys.length;
 
-      let roles = [];
-      if (count === 2) roles = ["Xerife", "Fora-da-Lei"];
-      else if (count === 3) roles = ["Xerife", "Fora-da-Lei", "Renegado"];
-      else if (count === 4) roles = ["Xerife", "Ajudante", "Fora-da-Lei", "Renegado"];
-      else roles = ["Xerife", "Ajudante", "Fora-da-Lei", "Fora-da-Lei", "Renegado", "Fora-da-Lei", "Ajudante", "Fora-da-Lei"].slice(0, count);
+      // Monta papéis exatamente para o número de participantes presentes
+      let rolesPool = ["Xerife", "Fora-da-Lei"];
+      if (count >= 3) rolesPool.push("Renegado");
+      if (count >= 4) rolesPool.push("Ajudante");
+      if (count >= 5) rolesPool.push("Fora-da-Lei");
+      if (count >= 6) rolesPool.push("Fora-da-Lei");
+      if (count >= 7) rolesPool.push("Ajudante");
+      if (count >= 8) rolesPool.push("Fora-da-Lei");
 
-      roles.sort(() => Math.random() - 0.5);
+      rolesPool.sort(() => Math.random() - 0.5);
       const chars = [...CHARACTERS].sort(() => Math.random() - 0.5);
 
       const updatedPlayers = {};
       playerKeys.forEach((id, idx) => {
-        const role = roles[idx];
+        const role = rolesPool[idx] || "Fora-da-Lei";
         const char = chars[idx % chars.length];
         const isSheriff = role === "Xerife";
         const maxHp = char.maxHp + (isSheriff ? 2 : 0);
@@ -726,6 +745,7 @@
       });
     });
 
+    // RESOLVER DADOS COM ID ÚNICO (PREVINE TRAVAMENTO EM DADOS REPETIDOS)
     btnResolve.addEventListener("click", async () => {
       if (isSpectator || hasResolvedThisTurn) return;
       hasResolvedThisTurn = true;
@@ -748,8 +768,11 @@
         await update(roomRef, { players: data.players, arrowPool: data.arrowPool, lastActivity: Date.now() });
       }
 
-      activeDicePool = dice.filter(d => d === "🎯1" || d === "🎯2" || d === "🍺");
-      
+      // Cria a pilha com IDs únicos para cada dado elegível
+      activeDicePool = dice
+        .map((symbol, idx) => ({ id: `die_${idx}_${Math.random()}`, symbol, resolved: false }))
+        .filter(item => item.symbol === "🎯1" || item.symbol === "🎯2" || item.symbol === "🍺");
+
       if (activeDicePool.length === 0) {
         logMessage("Sem dados para resolver. Passando a vez automaticamente...");
         return passTurnAutomatically(data);
@@ -764,7 +787,7 @@
       const list = document.getElementById("pending-list");
       if (activeDicePool.length > 0) {
         box.classList.remove("hidden");
-        list.innerText = activeDicePool.join("  ");
+        list.innerText = activeDicePool.map(d => d.symbol).join("  ");
       } else { box.classList.add("hidden"); }
     }
 
@@ -772,7 +795,7 @@
       document.querySelectorAll(".player-card").forEach(el => el.classList.remove("targetable"));
       if (activeDicePool.length === 0) return;
 
-      const currentSymbol = activeDicePool[0];
+      const currentItem = activeDicePool[0];
       const aliveIds = data.playerOrder.filter(id => data.players[id].alive);
       const myIndex = aliveIds.indexOf(localPlayerId);
       const total = aliveIds.length;
@@ -780,14 +803,14 @@
       if (total <= 1) return;
 
       let validTargets = [];
-      if (currentSymbol === '🎯1') {
+      if (currentItem.symbol === '🎯1') {
         validTargets = [aliveIds[(myIndex - 1 + total) % total], aliveIds[(myIndex + 1) % total]];
         logMessage(`🎯 Resolvendo [🎯1]: Clique no alvo a Distância 1.`);
-      } else if (currentSymbol === '🎯2') {
+      } else if (currentItem.symbol === '🎯2') {
         const targetIdx = total <= 2 ? (myIndex + 1) % total : (myIndex + 2) % total;
         validTargets = [aliveIds[targetIdx]];
         logMessage(`🎯 Resolvendo [🎯2]: Clique no alvo a Distância 2.`);
-      } else if (currentSymbol === '🍺') {
+      } else if (currentItem.symbol === '🍺') {
         validTargets = aliveIds;
         logMessage(`🍺 Resolvendo [🍺]: Clique no jogador para CURAR +1 PV.`);
       }
@@ -802,16 +825,16 @@
       if (isSpectator) return;
       const roomRef = ref(db, `rooms/${currentRoomCode}`);
       const target = data.players[targetId];
-      const currentSymbol = activeDicePool.shift();
+      const currentItem = activeDicePool.shift(); // Consome o objeto do dado resolvido
 
-      if (currentSymbol === '🎯1' || currentSymbol === '🎯2') {
+      if (currentItem.symbol === '🎯1' || currentItem.symbol === '🎯2') {
         target.hp = Math.max(0, target.hp - 1);
         if (target.hp === 0 && target.alive) {
           handlePlayerDeath(targetId, data.players[localPlayerId].name, data);
         } else {
-          logMessage(`💥 Dado [${currentSymbol}] usado contra ${target.name}! (-1 PV)`);
+          logMessage(`💥 Dado [${currentItem.symbol}] usado contra ${target.name}! (-1 PV)`);
         }
-      } else if (currentSymbol === '🍺') {
+      } else if (currentItem.symbol === '🍺') {
         target.hp = Math.min(target.maxHp, target.hp + 1);
         logMessage(`🍺 Dado [🍺] usado em ${target.name}! (+1 PV)`);
       }
@@ -862,7 +885,6 @@
       }
     }
 
-    // REGISTRO DO VENCEDOR E DATA NO ENCERRAMENTO DA SALA
     async function checkGameEnd(data) {
       if (gameEnded || data.status !== "playing") return;
 
@@ -909,8 +931,11 @@
       passTurnAutomatically(snapshot.val());
     });
 
+    // LÓGICA COMPLETA DE TURNO DOS BOTS (COM FEED DE NOTÍCIAS COMPLETO)
     async function handleBotTurn(data, botId) {
-      logMessage(`🤖 Turno de ${data.players[botId].name}...`);
+      const bot = data.players[botId];
+      logMessage(`🤖 Turno de ${bot.name}...`);
+      
       setTimeout(async () => {
         const roomRef = ref(db, `rooms/${currentRoomCode}`);
         const faces = ["🎯1", "🎯2", "🍺", "🏹", "💣", "🔫"];
@@ -921,19 +946,48 @@
         const myIndex = aliveIds.indexOf(botId);
         const total = aliveIds.length;
 
-        if (dice.includes("🎯1") && total > 1) {
+        logMessage(`🎲 ${bot.name} rolou: [ ${dice.join(" | ")} ]`);
+
+        // 1. Processar Cervejas (Curar o próprio Bot ou o Xerife)
+        const beerCount = dice.filter(d => d === "🍺").length;
+        if (beerCount > 0) {
+          players[botId].hp = Math.min(players[botId].maxHp, players[botId].hp + beerCount);
+          logMessage(`🍺 ${bot.name} usou ${beerCount} Cerveja(s) e recuperou PV!`);
+        }
+
+        // 2. Processar Tiros de Distância 1
+        const shot1Count = dice.filter(d => d === "🎯1").length;
+        if (shot1Count > 0 && total > 1) {
           const targetId = aliveIds[(myIndex + 1) % total];
           if (targetId !== botId) {
-            players[targetId].hp = Math.max(0, players[targetId].hp - 1);
-            if (players[targetId].hp === 0 && players[targetId].alive) handlePlayerDeath(targetId, players[botId].name, { players });
-            logMessage(`🤖 Bot ${players[botId].name} usou 🎯1 contra ${players[targetId].name}!`);
+            players[targetId].hp = Math.max(0, players[targetId].hp - shot1Count);
+            logMessage(`💥 ${bot.name} usou ${shot1Count}x [🎯1] contra ${players[targetId].name}! (-${shot1Count} PV)`);
+            if (players[targetId].hp === 0 && players[targetId].alive) handlePlayerDeath(targetId, bot.name, { players });
+          }
+        }
+
+        // 3. Processar Tiros de Distância 2
+        const shot2Count = dice.filter(d => d === "🎯2").length;
+        if (shot2Count > 0 && total > 1) {
+          const targetIdx = total <= 2 ? (myIndex + 1) % total : (myIndex + 2) % total;
+          const targetId = aliveIds[targetIdx];
+          if (targetId !== botId) {
+            players[targetId].hp = Math.max(0, players[targetId].hp - shot2Count);
+            logMessage(`💥 ${bot.name} usou ${shot2Count}x [🎯2] contra ${players[targetId].name}! (-${shot2Count} PV)`);
+            if (players[targetId].hp === 0 && players[targetId].alive) handlePlayerDeath(targetId, bot.name, { players });
           }
         }
 
         let nextIndex = (data.turnIndex + 1) % data.playerOrder.length;
         while (!players[data.playerOrder[nextIndex]].alive) nextIndex = (nextIndex + 1) % data.playerOrder.length;
 
-        await update(roomRef, { diceResults: dice, players, turnIndex: nextIndex, rollsLeft: 3, lastActivity: Date.now() });
+        await update(roomRef, { 
+          diceResults: dice, 
+          players, 
+          turnIndex: nextIndex, 
+          rollsLeft: 3, 
+          lastActivity: Date.now() 
+        });
       }, 2000);
     }
 
