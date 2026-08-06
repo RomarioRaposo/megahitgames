@@ -13,27 +13,50 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 
-    <style>
-        * { user-select: none; -webkit-user-select: none; touch-action: manipulation; }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0b0f19; color: #f8fafc; }
-        canvas { display: block; width: 100%; height: 100%; }
-        .hud-glass { background: rgba(15, 23, 42, 0.88); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        .btn-upgrade { background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid #334155; transition: all 0.15s ease; }
-        .btn-upgrade:hover:not(:disabled) { border-color: #3b82f6; transform: translateY(-1px); background: linear-gradient(135deg, #2563eb, #1d4ed8); }
-        .btn-upgrade:active:not(:disabled) { transform: translateY(0); }
-        .btn-upgrade:disabled { opacity: 0.4; cursor: not-allowed; border-color: #1e293b; }
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-        /* Adicione estas regras dentro da tag <style> do index.html */
-        .pb-safe {
-            padding-bottom: max(12px, env(safe-area-inset-bottom));
-        }
-        
-        /* Garante espaço suficiente no rodapé para os botões do Android não cobrirem os textos */
-        footer.hud-glass {
-            padding-bottom: max(14px, env(safe-area-inset-bottom));
-        }
-    </style>
+   <style>
+    * { 
+        user-select: none; 
+        -webkit-user-select: none; 
+        touch-action: manipulation; 
+    }
+    body { 
+        font-family: 'Plus Jakarta Sans', sans-serif; 
+        background-color: #0b0f19; 
+        color: #f8fafc; 
+    }
+    canvas { 
+        display: block; 
+        width: 100%; 
+        height: 100%; 
+    }
+    .hud-glass { 
+        background: rgba(15, 23, 42, 0.94); 
+        backdrop-filter: blur(12px); 
+        border: 1px solid rgba(255, 255, 255, 0.1); 
+    }
+    .btn-upgrade { 
+        background: linear-gradient(135deg, #1e293b, #0f172a); 
+        border: 1px solid #334155; 
+        transition: all 0.15s ease; 
+    }
+    .btn-upgrade:hover:not(:disabled) { 
+        border-color: #3b82f6; 
+        background: linear-gradient(135deg, #2563eb, #1d4ed8); 
+    }
+    .btn-upgrade:active:not(:disabled) { 
+        transform: scale(0.98); 
+    }
+    .btn-upgrade:disabled { 
+        opacity: 0.35; 
+        cursor: not-allowed; 
+        border-color: #1e293b; 
+    }
+    
+    /* Espaçamento extra no Android para elevação do rodapé */
+    .pb-safe-extra {
+        padding-bottom: calc(max(16px, env(safe-area-inset-bottom)) + 12px) !important;
+    }
+</style>
 </head>
 <body class="h-screen w-screen flex flex-col overflow-hidden select-none">
 
@@ -131,64 +154,64 @@
         </div>
     </main>
 
-    <!-- HUD INFERIOR: LOJA DE UPGRADES -->
-<!-- HUD INFERIOR: LOJA DE UPGRADES -->
-<footer class="hud-glass p-1.5 sm:p-2.5 z-10 border-t border-slate-800 shrink-0 pb-safe">
-    <div class="max-w-5xl mx-auto flex sm:grid sm:grid-cols-3 lg:grid-cols-6 gap-1.5 sm:gap-2 overflow-x-auto shop-scroll pb-2 sm:pb-0">
+<!-- HUD INFERIOR: LOJA DE UPGRADES (GRID 3x2 NO MOBILE + ELEVAÇÃO SAFE AREA) -->
+<footer class="hud-glass p-2 z-10 border-t border-slate-800 shrink-0 pb-safe-extra">
+    <div class="max-w-5xl mx-auto grid grid-cols-3 lg:grid-cols-6 gap-1.5 sm:gap-2">
         
-        <button id="btn-upgrade-atkSpeed" onclick="buyUpgrade('atkSpeed')" class="btn-upgrade min-w-[110px] sm:min-w-0 p-2 rounded-xl text-left flex flex-col justify-between shrink-0">
-            <div class="flex justify-between items-start gap-1">
-                <span class="text-[10px] sm:text-[11px] font-bold text-blue-300 truncate">⚡ Atk Spd</span>
-                <span id="lvl-atkSpeed" class="text-[9px] sm:text-[10px] bg-blue-900/60 text-blue-200 px-1 rounded font-mono">Nv 1</span>
+        <button id="btn-upgrade-atkSpeed" onclick="buyUpgrade('atkSpeed')" class="btn-upgrade p-1.5 sm:p-2 rounded-lg sm:rounded-xl text-left flex flex-col justify-between">
+            <div class="flex justify-between items-start gap-0.5">
+                <span class="text-[9px] sm:text-[11px] font-bold text-blue-300 truncate">⚡ Atk Spd</span>
+                <span id="lvl-atkSpeed" class="text-[8px] sm:text-[10px] bg-blue-900/60 text-blue-200 px-1 rounded font-mono">Nv 1</span>
             </div>
-            <div class="text-[9px] sm:text-[10px] text-slate-400 mt-0.5">Cadência</div>
-            <div class="mt-0.5 text-[10px] sm:text-xs font-bold text-amber-400">🪙 <span id="cost-atkSpeed">15</span></div>
+            <div class="text-[8px] sm:text-[10px] text-slate-400">Cadência</div>
+            <div class="text-[9px] sm:text-xs font-bold text-amber-400">🪙 <span id="cost-atkSpeed">15</span></div>
         </button>
 
-        <button id="btn-upgrade-damage" onclick="buyUpgrade('damage')" class="btn-upgrade min-w-[110px] sm:min-w-0 p-2 rounded-xl text-left flex flex-col justify-between shrink-0">
-            <div class="flex justify-between items-start gap-1">
-                <span class="text-[10px] sm:text-[11px] font-bold text-red-300 truncate">⚔️ Dano</span>
-                <span id="lvl-damage" class="text-[9px] sm:text-[10px] bg-red-900/60 text-red-200 px-1 rounded font-mono">Nv 1</span>
+        <button id="btn-upgrade-damage" onclick="buyUpgrade('damage')" class="btn-upgrade p-1.5 sm:p-2 rounded-lg sm:rounded-xl text-left flex flex-col justify-between">
+            <div class="flex justify-between items-start gap-0.5">
+                <span class="text-[9px] sm:text-[11px] font-bold text-red-300 truncate">⚔️ Dano</span>
+                <span id="lvl-damage" class="text-[8px] sm:text-[10px] bg-red-900/60 text-red-200 px-1 rounded font-mono">Nv 1</span>
             </div>
-            <div class="text-[9px] sm:text-[10px] text-slate-400 mt-0.5">Por tiro</div>
-            <div class="mt-0.5 text-[10px] sm:text-xs font-bold text-amber-400">🪙 <span id="cost-damage">10</span></div>
+            <div class="text-[8px] sm:text-[10px] text-slate-400">Por tiro</div>
+            <div class="text-[9px] sm:text-xs font-bold text-amber-400">🪙 <span id="cost-damage">10</span></div>
         </button>
 
-        <button id="btn-upgrade-hp" onclick="buyUpgrade('hp')" class="btn-upgrade min-w-[110px] sm:min-w-0 p-2 rounded-xl text-left flex flex-col justify-between shrink-0">
-            <div class="flex justify-between items-start gap-1">
-                <span class="text-[10px] sm:text-[11px] font-bold text-emerald-300 truncate">🛡️ Max HP</span>
-                <span id="lvl-hp" class="text-[9px] sm:text-[10px] bg-emerald-900/60 text-emerald-200 px-1 rounded font-mono">Nv 1</span>
+        <button id="btn-upgrade-hp" onclick="buyUpgrade('hp')" class="btn-upgrade p-1.5 sm:p-2 rounded-lg sm:rounded-xl text-left flex flex-col justify-between">
+            <div class="flex justify-between items-start gap-0.5">
+                <span class="text-[9px] sm:text-[11px] font-bold text-emerald-300 truncate">🛡️ Max HP</span>
+                <span id="lvl-hp" class="text-[8px] sm:text-[10px] bg-emerald-900/60 text-emerald-200 px-1 rounded font-mono">Nv 1</span>
             </div>
-            <div class="text-[9px] sm:text-[10px] text-slate-400 mt-0.5">Vida Nave</div>
-            <div class="mt-0.5 text-[10px] sm:text-xs font-bold text-amber-400">🪙 <span id="cost-hp">20</span></div>
+            <div class="text-[8px] sm:text-[10px] text-slate-400">Vida Nave</div>
+            <div class="text-[9px] sm:text-xs font-bold text-amber-400">🪙 <span id="cost-hp">20</span></div>
         </button>
 
-        <button id="btn-upgrade-hpRegen" onclick="buyUpgrade('hpRegen')" class="btn-upgrade min-w-[110px] sm:min-w-0 p-2 rounded-xl text-left flex flex-col justify-between shrink-0">
-            <div class="flex justify-between items-start gap-1">
-                <span class="text-[10px] sm:text-[11px] font-bold text-teal-300 truncate">💖 Regen</span>
-                <span id="lvl-hpRegen" class="text-[9px] sm:text-[10px] bg-teal-900/60 text-teal-200 px-1 rounded font-mono">Nv 0</span>
+        <button id="btn-upgrade-hpRegen" onclick="buyUpgrade('hpRegen')" class="btn-upgrade p-1.5 sm:p-2 rounded-lg sm:rounded-xl text-left flex flex-col justify-between">
+            <div class="flex justify-between items-start gap-0.5">
+                <span class="text-[9px] sm:text-[11px] font-bold text-teal-300 truncate">💖 Regen</span>
+                <span id="lvl-hpRegen" class="text-[8px] sm:text-[10px] bg-teal-900/60 text-teal-200 px-1 rounded font-mono">Nv 0</span>
             </div>
-            <div class="text-[9px] sm:text-[10px] text-slate-400 mt-0.5">Cura/seg</div>
-            <div class="mt-0.5 text-[10px] sm:text-xs font-bold text-amber-400">🪙 <span id="cost-hpRegen">25</span></div>
+            <div class="text-[8px] sm:text-[10px] text-slate-400">Cura/seg</div>
+            <div class="text-[9px] sm:text-xs font-bold text-amber-400">🪙 <span id="cost-hpRegen">25</span></div>
         </button>
 
-        <button id="btn-upgrade-goldWave" onclick="buyUpgrade('goldWave')" class="btn-upgrade min-w-[110px] sm:min-w-0 p-2 rounded-xl text-left flex flex-col justify-between shrink-0">
-            <div class="flex justify-between items-start gap-1">
-                <span class="text-[10px] sm:text-[11px] font-bold text-amber-300 truncate">💰 +Onda</span>
-                <span id="lvl-goldWave" class="text-[9px] sm:text-[10px] bg-amber-900/60 text-amber-200 px-1 rounded font-mono">Nv 1</span>
+        <button id="btn-upgrade-goldWave" onclick="buyUpgrade('goldWave')" class="btn-upgrade p-1.5 sm:p-2 rounded-lg sm:rounded-xl text-left flex flex-col justify-between">
+            <div class="flex justify-between items-start gap-0.5">
+                <span class="text-[9px] sm:text-[11px] font-bold text-amber-300 truncate">💰 +Onda</span>
+                <span id="lvl-goldWave" class="text-[8px] sm:text-[10px] bg-amber-900/60 text-amber-200 px-1 rounded font-mono">Nv 1</span>
             </div>
-            <div class="text-[9px] sm:text-[10px] text-slate-400 mt-0.5">Bônus Onda</div>
-            <div class="mt-0.5 text-[10px] sm:text-xs font-bold text-amber-400">🪙 <span id="cost-goldWave">30</span></div>
+            <div class="text-[8px] sm:text-[10px] text-slate-400">Bônus Onda</div>
+            <div class="text-[9px] sm:text-xs font-bold text-amber-400">🪙 <span id="cost-goldWave">30</span></div>
         </button>
 
-        <button id="btn-upgrade-goldKill" onclick="buyUpgrade('goldKill')" class="btn-upgrade min-w-[110px] sm:min-w-0 p-2 rounded-xl text-left flex flex-col justify-between shrink-0">
-            <div class="flex justify-between items-start gap-1">
-                <span class="text-[10px] sm:text-[11px] font-bold text-yellow-300 truncate">🎯 +Abate</span>
-                <span id="lvl-goldKill" class="text-[9px] sm:text-[10px] bg-yellow-900/60 text-yellow-200 px-1 rounded font-mono">Nv 1</span>
+        <button id="btn-upgrade-goldKill" onclick="buyUpgrade('goldKill')" class="btn-upgrade p-1.5 sm:p-2 rounded-lg sm:rounded-xl text-left flex flex-col justify-between">
+            <div class="flex justify-between items-start gap-0.5">
+                <span class="text-[9px] sm:text-[11px] font-bold text-yellow-300 truncate">🎯 +Abate</span>
+                <span id="lvl-goldKill" class="text-[8px] sm:text-[10px] bg-yellow-900/60 text-yellow-200 px-1 rounded font-mono">Nv 1</span>
             </div>
-            <div class="text-[9px] sm:text-[10px] text-slate-400 mt-0.5">Por Abate</div>
-            <div class="mt-0.5 text-[10px] sm:text-xs font-bold text-amber-400">🪙 <span id="cost-goldKill">40</span></div>
+            <div class="text-[8px] sm:text-[10px] text-slate-400">Por Abate</div>
+            <div class="text-[9px] sm:text-xs font-bold text-amber-400">🪙 <span id="cost-goldKill">40</span></div>
         </button>
+
     </div>
 </footer>
 
