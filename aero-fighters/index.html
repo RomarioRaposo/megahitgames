@@ -2,54 +2,54 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Aero Fighters - MegaHit Games</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
-    <!-- Firebase SDKs originais do projeto -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 </head>
 <body>
+
     <div class="game-container">
-        <header class="hud">
-            <a href="../index.html" class="btn-back">← Voltar</a>
-            <div class="stats">
-                <span>SCORE: <b id="score-val">0</b></span>
+        <!-- Barra Superior (HUD) -->
+           <header class="game-header">
+            <a href="../" class="logo-link">
+                <h1>MegaHit<span>Games</span></h1>
+            </a>
+            <div class="hud">
+                <span>PONTOS: <strong id="score-val">0</strong></span>
+                <span>VIDAS: <strong id="lives-val">3</strong></span>
             </div>
         </header>
 
-        <div class="canvas-wrapper">
-            <canvas id="gameCanvas"></canvas>
+        <!-- Canvas do Jogo -->
+        <canvas id="gameCanvas" width="480" height="640"></canvas>
 
-            <div id="start-screen" class="overlay">
-                <h1>AERO FIGHTERS</h1>
-                <p>Setas ou Touch para Mover | Espaço para Atirar</p>
-                <button id="start-btn" class="btn-action">INICIAR MISSÃO</button>
-            </div>
-
-            <div id="game-over-screen" class="overlay hidden">
-                <h1>MISSÃO FALHOU</h1>
-                <p>Pontuação Final: <span id="final-score">0</span></p>
-
-                <div class="leaderboard-section">
-                    <h3>🏆 RANKING DE PILOTOS</h3>
-                    <ul id="leaderboard-list"></ul>
-                </div>
-
-                <button id="restart-btn" class="btn-action">NOVA TENTATIVA</button>
-            </div>
+        <!-- Overlay de Tela Inicial -->
+        <div id="overlay-start" class="overlay">
+            <h1>AERO FIGHTERS</h1>
+            <p>Arraste o dedo na tela (no mobile) ou use as setas do teclado (no PC) para controlar a nave. O disparo é automático!</p>
+            <button id="start-btn" class="btn">DECOLAR</button>
         </div>
 
-        <div class="mobile-controls">
-            <div class="dpad">
-                <button id="btn-left" class="ctrl-btn">◀</button>
-                <button id="btn-right" class="ctrl-btn">▶</button>
+        <!-- Overlay de Game Over & Ranking -->
+        <div id="overlay-gameover" class="overlay" style="display: none;">
+            <h1 id="gameover-title">GAME OVER</h1>
+            <p id="gameover-msg">Pontuação final: <strong id="final-score">0</strong></p>
+            
+            <div id="nick-form" class="nick-form">
+                <input type="text" id="player-nick" maxlength="12" placeholder="Seu Apelido / Nick" autocomplete="off">
+                <button id="save-score-btn" class="btn">SALVAR NO RANKING</button>
             </div>
-            <button id="btn-fire" class="fire-btn">FIRE 🔥</button>
+
+            <!-- Tabela Ranking Top 10 -->
+            <div class="ranking-container">
+                <h3>🏆 TOP 10 PILOTOS</h3>
+                <ol id="leaderboard-list"></ol>
+            </div>
+
+            <button id="restart-btn" class="btn btn-secondary">JOGAR NOVAMENTE</button>
         </div>
     </div>
 
-    <script src="game.js"></script>
+    <script type="module" src="game.js"></script>
 </body>
 </html>
