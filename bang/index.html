@@ -297,8 +297,6 @@
     let localPlayerId = "p_" + Math.random().toString(36).substring(2, 7);
     let currentRoomCode = null;
     let keptDiceIndices = [];
-    
-    // Objeto Estruturado para Ações com Rastreamento de ID NÚNICO
     let activeDicePool = []; 
 
     let isSpectator = false;
@@ -400,12 +398,13 @@
         html += `<p style='font-size:0.75rem; color:var(--text-muted);'>Nenhuma partida encerrada.</p>`;
       } else {
         topFinished.forEach(({ code, data }) => {
-          const winnerText = data.winner || "Finalizada";
+          const winnerText = data.winner || "Partida Encerrada";
           const dateTxt = data.finishedAt ? new Date(data.finishedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "Hoje";
+          
           html += `
             <div class="room-item finished">
-              <span><strong>${code}</strong> - ${winnerText}</span>
-              <small style="color:var(--text-muted);">${dateTxt}</small>
+              <span><strong>${code}</strong>: ${winnerText}</span>
+              <small style="color:var(--text-muted); font-size:0.7rem;">${dateTxt}</small>
             </div>`;
         });
       }
@@ -484,7 +483,6 @@
       listenRoom();
     }
 
-    // SAIR DA SALA E REEMPLAZAR POR BOT SE ESTIVER EM JOGO
     btnLeaveRoom.addEventListener("click", async () => {
       if (!currentRoomCode) return;
       const roomRef = ref(db, `rooms/${currentRoomCode}`);
@@ -492,14 +490,12 @@
       if (snapshot.exists()) {
         const data = snapshot.val();
         if (data.status === "playing" && data.players[localPlayerId]) {
-          // Converte o jogador humano em BOT para não quebrar a partida
           await update(ref(db, `rooms/${currentRoomCode}/players/${localPlayerId}`), {
             name: `${data.players[localPlayerId].name} (BOT)`,
             isBot: true
           });
           logMessage(`🚪 ${data.players[localPlayerId].name} saiu e foi substituído por um BOT.`);
         } else if (data.status === "waiting") {
-          // Remove da sala se ainda estiver no lobby
           delete data.players[localPlayerId];
           const updatedOrder = (data.playerOrder || []).filter(id => id !== localPlayerId);
           await update(roomRef, { players: data.players, playerOrder: updatedOrder });
@@ -532,7 +528,6 @@
       });
     });
 
-    // DISTRIBUIÇÃO DINÂMICA DE PAPÉIS (EVITA SUMIR BOTS)
     btnStart.addEventListener("click", async () => {
       const roomRef = ref(db, `rooms/${currentRoomCode}`);
       const snapshot = await get(roomRef);
@@ -541,7 +536,6 @@
       const playerKeys = data.playerOrder;
       const count = playerKeys.length;
 
-      // Monta papéis exatamente para o número de participantes presentes
       let rolesPool = ["Xerife", "Fora-da-Lei"];
       if (count >= 3) rolesPool.push("Renegado");
       if (count >= 4) rolesPool.push("Ajudante");
@@ -745,7 +739,6 @@
       });
     });
 
-    // RESOLVER DADOS COM ID ÚNICO (PREVINE TRAVAMENTO EM DADOS REPETIDOS)
     btnResolve.addEventListener("click", async () => {
       if (isSpectator || hasResolvedThisTurn) return;
       hasResolvedThisTurn = true;
@@ -768,7 +761,6 @@
         await update(roomRef, { players: data.players, arrowPool: data.arrowPool, lastActivity: Date.now() });
       }
 
-      // Cria a pilha com IDs únicos para cada dado elegível
       activeDicePool = dice
         .map((symbol, idx) => ({ id: `die_${idx}_${Math.random()}`, symbol, resolved: false }))
         .filter(item => item.symbol === "🎯1" || item.symbol === "🎯2" || item.symbol === "🍺");
@@ -825,7 +817,7 @@
       if (isSpectator) return;
       const roomRef = ref(db, `rooms/${currentRoomCode}`);
       const target = data.players[targetId];
-      const currentItem = activeDicePool.shift(); // Consome o objeto do dado resolvido
+      const currentItem = activeDicePool.shift(); 
 
       if (currentItem.symbol === '🎯1' || currentItem.symbol === '🎯2') {
         target.hp = Math.max(0, target.hp - 1);
@@ -892,7 +884,7 @@
       let aliveOutlaws = 0;
       let aliveRenegades = 0;
 
-      Object.values(data.players).forEach(p => {
+      Object.values(data.players || {}).forEach(p => {
         if (p.alive) {
           if (p.role === "Xerife") aliveSheriff = true;
           if (p.role === "Fora-da-Lei") aliveOutlaws++;
@@ -902,14 +894,22 @@
 
       let winnerStatus = null;
 
+      // 1. Foras-da-Lei vencem se o Xerife morrer
       if (!aliveSheriff) {
         gameEnded = true;
         winnerStatus = "Foras-da-Lei venceram";
         showModal("🏆 FIM DE JOGO!", null, "<p style='text-align:center;'><strong>Os Foras-da-Lei Venceram!</strong><br>O Xerife foi mordido pela poeira!</p>");
       } 
+      // 2. Renegado vence se for o único sobrevivente
+      else if (aliveOutlaws === 0 && aliveRenegades === 1 && Object.values(data.players).filter(p => p.alive).length === 1) {
+        gameEnded = true;
+        winnerStatus = "Renegado venceu";
+        showModal("🏆 FIM DE JOGO!", null, "<p style='text-align:center;'><strong>O Renegado Venceu!</strong><br>Ele sobrou sozinho no Velho Oeste!</p>");
+      }
+      // 3. Xerife & Ajudantes vencem se todos os inimigos morrerem
       else if (aliveOutlaws === 0 && aliveRenegades === 0) {
         gameEnded = true;
-        winnerStatus = "Xerife venceu";
+        winnerStatus = "Xerife & Ajudantes venceram";
         showModal("🏆 VOCÊ VENCEU!", null, "<p style='text-align:center;'><strong>O Xerife & Ajudantes Venceram!</strong><br>A ordem foi restaurada no Velho Oeste!</p>");
       }
 
@@ -931,7 +931,6 @@
       passTurnAutomatically(snapshot.val());
     });
 
-    // LÓGICA COMPLETA DE TURNO DOS BOTS (COM FEED DE NOTÍCIAS COMPLETO)
     async function handleBotTurn(data, botId) {
       const bot = data.players[botId];
       logMessage(`🤖 Turno de ${bot.name}...`);
@@ -948,14 +947,12 @@
 
         logMessage(`🎲 ${bot.name} rolou: [ ${dice.join(" | ")} ]`);
 
-        // 1. Processar Cervejas (Curar o próprio Bot ou o Xerife)
         const beerCount = dice.filter(d => d === "🍺").length;
         if (beerCount > 0) {
           players[botId].hp = Math.min(players[botId].maxHp, players[botId].hp + beerCount);
           logMessage(`🍺 ${bot.name} usou ${beerCount} Cerveja(s) e recuperou PV!`);
         }
 
-        // 2. Processar Tiros de Distância 1
         const shot1Count = dice.filter(d => d === "🎯1").length;
         if (shot1Count > 0 && total > 1) {
           const targetId = aliveIds[(myIndex + 1) % total];
@@ -966,7 +963,6 @@
           }
         }
 
-        // 3. Processar Tiros de Distância 2
         const shot2Count = dice.filter(d => d === "🎯2").length;
         if (shot2Count > 0 && total > 1) {
           const targetIdx = total <= 2 ? (myIndex + 1) % total : (myIndex + 2) % total;
