@@ -83,6 +83,28 @@
     .status-bar { display: flex; justify-content: space-between; align-items: center; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color); margin-bottom: 0.75rem; font-size: 0.85rem; }
     .badge { background: var(--border-color); padding: 0.2rem 0.4rem; border-radius: 6px; font-weight: 700; }
 
+    /* ESTILOS DO PAINEL DE CONTAGEM DE FUNÇÕES VIVAS */
+    .roles-summary-bar {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      background: var(--bg-color);
+      border: 1px solid var(--border-color);
+      padding: 0.4rem;
+      border-radius: 8px;
+      margin-bottom: 0.75rem;
+      font-size: 0.75rem;
+      flex-wrap: wrap;
+      gap: 0.3rem;
+    }
+    .role-count-tag {
+      background: var(--card-bg);
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      font-weight: 600;
+    }
+
     .players-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -219,6 +241,14 @@
           <button id="btn-leave-room" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">🚪 Sair</button>
           <button id="btn-close-room" class="btn btn-danger hidden" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">🔴 Fechar</button>
         </div>
+      </div>
+
+      <!-- PAINEL DINÂMICO DE FUNÇÕES VIVAS -->
+      <div id="roles-summary-bar" class="roles-summary-bar hidden">
+        <span class="role-count-tag">🤠 Xerife: <strong id="cnt-sheriff">0</strong></span>
+        <span class="role-count-tag">🛡️ Ajudante: <strong id="cnt-deputy">0</strong></span>
+        <span class="role-count-tag">☠️ Fora-da-Lei: <strong id="cnt-outlaw">0</strong></span>
+        <span class="role-count-tag">🗡️ Renegado: <strong id="cnt-renegade">0</strong></span>
       </div>
 
       <div class="arrow-bank">
@@ -542,7 +572,6 @@
       });
     });
 
-    // INÍCIO DE PARTIDA CORRIGIDO: SEM DESCARTE DE BOTS
     btnStart.addEventListener("click", async () => {
       const roomRef = ref(db, `rooms/${currentRoomCode}`);
       const snapshot = await get(roomRef);
@@ -619,6 +648,25 @@
         const isMyTurn = !isSpectator && activePlayerId === localPlayerId && data.status === "playing";
 
         document.getElementById("arrow-count").innerText = data.arrowPool;
+
+        // ATUALIZAÇÃO DINÂMICA DO PAINEL DE CONTAGEM DE FUNÇÕES VIVAS
+        if (data.status === "playing") {
+          document.getElementById("roles-summary-bar").classList.remove("hidden");
+
+          let counts = { "Xerife": 0, "Ajudante": 0, "Fora-da-Lei": 0, "Renegado": 0 };
+          Object.values(data.players || {}).forEach(p => {
+            if (p.alive && counts[p.role] !== undefined) {
+              counts[p.role]++;
+            }
+          });
+
+          document.getElementById("cnt-sheriff").innerText = counts["Xerife"];
+          document.getElementById("cnt-deputy").innerText = counts["Ajudante"];
+          document.getElementById("cnt-outlaw").innerText = counts["Fora-da-Lei"];
+          document.getElementById("cnt-renegade").innerText = counts["Renegado"];
+        } else {
+          document.getElementById("roles-summary-bar").classList.add("hidden");
+        }
 
         if (data.host === localPlayerId && !isSpectator) {
           btnCloseRoom.classList.remove("hidden");
