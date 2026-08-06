@@ -1,237 +1,384 @@
-// Configuração do Firebase mantida integralmente do repositório
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getDatabase, ref, push, set, get, query, orderByChild, limitToLast } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+// Credenciais Reais do Firebase - MegaHit Games
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "megahitgames.firebaseapp.com",
-  projectId: "megahitgames",
-  storageBucket: "megahitgames.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyCvhEL3kMRMYhPK55tcICbLsWFHd45WgB8",
+  authDomain: "megahit-games.firebaseapp.com",
+  databaseURL: "https://megahit-games-default-rtdb.firebaseio.com",
+  projectId: "megahit-games",
+  storageBucket: "megahit-games.firebasestorage.app",
+  messagingSenderId: "595034446210",
+  appId: "1:595034446210:web:01f430b992d529988cd79b"
 };
 
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
-const db = firebase.firestore();
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
+// Elementos UI
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
 const scoreVal = document.getElementById('score-val');
-const startScreen = document.getElementById('start-screen');
-const gameOverScreen = document.getElementById('game-over-screen');
-const finalScore = document.getElementById('final-score');
+const bestVal = document.getElementById('best-val');
+const overlayStart = document.getElementById('overlay-start');
+const overlayGameOver = document.getElementById('overlay-gameover');
+const finalScoreEl = document.getElementById('final-score');
+const playerNickInput = document.getElementById('player-nick');
+const saveScoreBtn = document.getElementById('save-score-btn');
+const leaderboardList = document.getElementById('leaderboard-list');
 const startBtn = document.getElementById('start-btn');
 const restartBtn = document.getElementById('restart-btn');
-const flapBtn = document.getElementById('flap-btn');
-const leaderboardList = document.getElementById('leaderboard-list');
 
-let animationFrameId;
-let gameRunning = false;
+// Estado
+let gameActive = false;
 let score = 0;
+let bestScore = localStorage.getItem('megahit_neonflap_best') || 0;
 
-// Ajuste DPI Canvas para telas de alta resolução sem alterar lógica
-function resizeCanvas() {
-  const rect = canvas.getBoundingClientRect();
-  canvas.width = rect.width * window.devicePixelRatio;
-  canvas.height = rect.height * window.devicePixelRatio;
-  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+if (bestVal) {
+    bestVal.textContent = bestScore;
 }
-window.addEventListener('resize', resizeCanvas);
-resizeCanvas();
 
-// Lógica e Física do Pássaro mantidas
+let lastTime = 0;
+let dt = 0;
+let animationFrameId = null;
+
+// Nave Neon
 const bird = {
-  x: 60,
-  y: 200,
-  radius: 12,
-  velocity: 0,
-  gravity: 0.35,
-  jump: -6.5,
-  particles: []
+    x: 80,
+    y: canvas.height / 2,
+    radius: 14,
+    velocity: 0,
+    gravity: 1200,
+    jumpForce: -380,
+    rotation: 0
 };
 
-let pipes = [];
-const pipeWidth = 50;
-const pipeGap = 130;
-let pipeTimer = 0;
+let obstacles = [];
+let particles = [];
+let spawnTimer = 0;
+const spawnInterval = 1.6;
+const gapSize = 140;
 
-function createPipe() {
-  const h = canvas.height / window.devicePixelRatio;
-  const minHeight = 50;
-  const maxHeight = h - pipeGap - minHeight;
-  const topHeight = Math.floor(Math.random() * (maxHeight - minHeight + 1)) + minHeight;
-
-  pipes.push({
-    x: canvas.width / window.devicePixelRatio,
-    top: topHeight,
-    bottom: h - topHeight - pipeGap,
-    passed: false
-  });
-}
-
-function flap() {
-  if (!gameRunning) return;
-  bird.velocity = bird.jump;
-
-  // Efeito Visual de Rastro Neon
-  for (let i = 0; i < 4; i++) {
-    bird.particles.push({
-      x: bird.x,
-      y: bird.y,
-      vx: (Math.random() - 0.5) * 2,
-      vy: Math.random() * 2 + 1,
-      alpha: 1,
-      color: '#00f0ff'
-    });
-  }
-}
-
-function update() {
-  if (!gameRunning) return;
-
-  const h = canvas.height / window.devicePixelRatio;
-
-  bird.velocity += bird.gravity;
-  bird.y += bird.velocity;
-
-  if (bird.y + bird.radius >= h || bird.y - bird.radius <= 0) {
-    endGame();
-  }
-
-  bird.particles.forEach((p, i) => {
-    p.x += p.vx;
-    p.y += p.vy;
-    p.alpha -= 0.04;
-    if (p.alpha <= 0) bird.particles.splice(i, 1);
-  });
-
-  pipeTimer++;
-  if (pipeTimer % 110 === 0) createPipe();
-
-  pipes.forEach((pipe, index) => {
-    pipe.x -= 2.2;
-
-    if (!pipe.passed && pipe.x < bird.x) {
-      pipe.passed = true;
-      score++;
-      scoreVal.textContent = score;
+// Controles (Desktop / Touch)
+window.addEventListener('keydown', e => {
+    if (e.code === 'Space' || e.key === ' ') {
+        e.preventDefault();
+        if (!gameActive && overlayStart.style.display !== 'none') {
+            startGame();
+        } else {
+            jump();
+        }
     }
+});
 
-    if (
-      bird.x + bird.radius > pipe.x &&
-      bird.x - bird.radius < pipe.x + pipeWidth &&
-      (bird.y - bird.radius < pipe.top || bird.y + bird.radius > h - pipe.bottom)
-    ) {
-      endGame();
+canvas.addEventListener('touchstart', e => {
+    e.preventDefault();
+    if (gameActive) jump();
+}, { passive: false });
+
+canvas.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    if (gameActive) jump();
+});
+
+function jump() {
+    if (!gameActive) return;
+    bird.velocity = bird.jumpForce;
+
+    for (let i = 0; i < 8; i++) {
+        particles.push({
+            x: bird.x - 10,
+            y: bird.y,
+            vx: (Math.random() - 0.5) * 80 - 100,
+            vy: (Math.random() - 0.5) * 80,
+            size: Math.random() * 4 + 2,
+            color: '#38bdf8',
+            life: 0.3
+        });
     }
-
-    if (pipe.x + pipeWidth < 0) pipes.splice(index, 1);
-  });
 }
 
-function draw() {
-  const w = canvas.width / window.devicePixelRatio;
-  const h = canvas.height / window.devicePixelRatio;
-
-  ctx.clearRect(0, 0, w, h);
-
-  // Renderização Visual Aprimorada: Partículas
-  bird.particles.forEach(p => {
-    ctx.save();
-    ctx.globalAlpha = p.alpha;
-    ctx.fillStyle = p.color;
-    ctx.shadowBlur = 8;
-    ctx.shadowColor = p.color;
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-  });
-
-  // Renderização Visual Aprimorada: Canos Neon
-  ctx.save();
-  ctx.fillStyle = '#ff007f';
-  ctx.shadowBlur = 12;
-  ctx.shadowColor = '#ff007f';
-  pipes.forEach(pipe => {
-    ctx.fillRect(pipe.x, 0, pipeWidth, pipe.top);
-    ctx.fillRect(pipe.x, h - pipe.bottom, pipeWidth, pipe.bottom);
-  });
-  ctx.restore();
-
-  // Renderização Visual Aprimorada: Pássaro
-  ctx.save();
-  ctx.translate(bird.x, bird.y);
-  ctx.rotate(Math.min(Math.PI / 4, Math.max(-Math.PI / 4, bird.velocity * 0.1)));
-  ctx.fillStyle = '#00f0ff';
-  ctx.shadowBlur = 15;
-  ctx.shadowColor = '#00f0ff';
-  ctx.beginPath();
-  ctx.arc(0, 0, bird.radius, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-}
-
-function gameLoop() {
-  update();
-  draw();
-  if (gameRunning) animationFrameId = requestAnimationFrame(gameLoop);
-}
-
-// Conexão com Firebase para envio de placar
-function saveScore(score) {
-  if (score <= 0) return;
-  db.collection("scores_neon_flap").add({
-    score: score,
-    timestamp: firebase.firestore.FieldValue.serverTimestamp()
-  }).then(() => {
-    loadLeaderboard();
-  }).catch(err => console.error("Erro ao salvar pontuação: ", err));
-}
-
-// Carregamento de Melhores Pontuações no Firebase
-function loadLeaderboard() {
-  leaderboardList.innerHTML = "Carregando...";
-  db.collection("scores_neon_flap")
-    .orderBy("score", "desc")
-    .limit(5)
-    .get()
-    .then(querySnapshot => {
-      leaderboardList.innerHTML = "";
-      querySnapshot.forEach(doc => {
-        const data = doc.data();
-        const li = document.createElement("li");
-        li.innerHTML = `<span>Jogador</span> <strong>${data.score} pts</strong>`;
-        leaderboardList.appendChild(li);
-      });
-    });
-}
+// Vinculando Eventos aos Botões de Forma Direta
+if (startBtn) startBtn.onclick = (e) => { e.stopPropagation(); startGame(); };
+if (restartBtn) restartBtn.onclick = (e) => { e.stopPropagation(); startGame(); };
+if (saveScoreBtn) saveScoreBtn.onclick = (e) => { e.stopPropagation(); saveRankingScore(); };
 
 function startGame() {
-  resizeCanvas();
-  bird.y = 200;
-  bird.velocity = 0;
-  bird.particles = [];
-  pipes = [];
-  score = 0;
-  scoreVal.textContent = score;
-  pipeTimer = 0;
-  gameRunning = true;
-  startScreen.classList.add('hidden');
-  gameOverScreen.classList.add('hidden');
-  gameLoop();
+    if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+    }
+
+    score = 0;
+    if (scoreVal) scoreVal.textContent = score;
+
+    bird.y = canvas.height / 2;
+    bird.velocity = 0;
+    bird.rotation = 0;
+
+    obstacles = [];
+    particles = [];
+    spawnTimer = 0;
+
+    overlayStart.style.display = 'none';
+    overlayGameOver.style.display = 'none';
+    gameActive = true;
+    lastTime = performance.now();
+    
+    animationFrameId = requestAnimationFrame(gameLoop);
 }
 
-function endGame() {
-  gameRunning = false;
-  cancelAnimationFrame(animationFrameId);
-  finalScore.textContent = score;
-  saveScore(score);
-  gameOverScreen.classList.remove('hidden');
+function gameOver() {
+    gameActive = false;
+    if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+    }
+
+    if (score > bestScore) {
+        bestScore = score;
+        localStorage.setItem('megahit_neonflap_best', bestScore);
+        if (bestVal) bestVal.textContent = bestScore;
+    }
+
+    if (finalScoreEl) finalScoreEl.textContent = score;
+    overlayGameOver.style.display = 'flex';
+    
+    const nickForm = document.getElementById('nick-form');
+    if (nickForm) nickForm.style.display = 'flex';
+    
+    if (saveScoreBtn) {
+        saveScoreBtn.disabled = false;
+        saveScoreBtn.textContent = 'SALVAR NO RANKING';
+    }
+
+    renderLeaderboard();
 }
 
-window.addEventListener('keydown', e => { if (e.code === 'Space') flap(); });
-flapBtn.addEventListener('click', flap);
-canvas.addEventListener('touchstart', (e) => { e.preventDefault(); flap(); });
-startBtn.addEventListener('click', startGame);
-restartBtn.addEventListener('click', startGame);
+function gameLoop(now) {
+    if (!gameActive) return;
+
+    dt = (now - lastTime) / 1000;
+    if (dt > 0.1) dt = 0.1;
+    lastTime = now;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    updateBird();
+    updateObstacles();
+    updateParticles();
+    checkCollisions();
+
+    drawBackground();
+    drawObstacles();
+    drawParticles();
+    drawBird();
+
+    animationFrameId = requestAnimationFrame(gameLoop);
+}
+
+function updateBird() {
+    bird.velocity += bird.gravity * dt;
+    bird.y += bird.velocity * dt;
+    bird.rotation = Math.min(Math.PI / 4, Math.max(-Math.PI / 4, bird.velocity * 0.002));
+}
+
+function updateObstacles() {
+    spawnTimer += dt;
+    if (spawnTimer >= spawnInterval) {
+        const minHeight = 60;
+        const maxHeight = canvas.height - gapSize - minHeight;
+        const topHeight = Math.floor(Math.random() * (maxHeight - minHeight + 1)) + minHeight;
+
+        obstacles.push({
+            x: canvas.width,
+            topHeight: topHeight,
+            bottomY: topHeight + gapSize,
+            width: 52,
+            passed: false,
+            color: Math.random() < 0.5 ? '#ec4899' : '#a855f7'
+        });
+
+        spawnTimer = 0;
+    }
+
+    obstacles.forEach((obs, i) => {
+        obs.x -= 160 * dt;
+
+        if (!obs.passed && obs.x + obs.width < bird.x) {
+            obs.passed = true;
+            score++;
+            if (scoreVal) scoreVal.textContent = score;
+        }
+
+        if (obs.x + obs.width < -10) obstacles.splice(i, 1);
+    });
+}
+
+function updateParticles() {
+    particles.forEach((p, i) => {
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.life -= dt;
+        if (p.life <= 0) particles.splice(i, 1);
+    });
+}
+
+function checkCollisions() {
+    if (bird.y - bird.radius < 0 || bird.y + bird.radius > canvas.height) {
+        gameOver();
+        return;
+    }
+
+    obstacles.forEach(obs => {
+        if (bird.x + bird.radius > obs.x && bird.x - bird.radius < obs.x + obs.width) {
+            if (bird.y - bird.radius < obs.topHeight || bird.y + bird.radius > obs.bottomY) {
+                gameOver();
+            }
+        }
+    });
+}
+
+function drawBackground() {
+    ctx.fillStyle = '#020617';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.05)';
+    ctx.lineWidth = 1;
+    for (let x = 0; x < canvas.width; x += 40) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+    }
+}
+
+function drawBird() {
+    ctx.save();
+    ctx.translate(bird.x, bird.y);
+    ctx.rotate(bird.rotation);
+
+    ctx.shadowColor = '#ec4899';
+    ctx.shadowBlur = 12;
+
+    ctx.fillStyle = '#ec4899';
+    ctx.beginPath();
+    ctx.moveTo(16, 0);
+    ctx.lineTo(-12, -10);
+    ctx.lineTo(-6, 0);
+    ctx.lineTo(-12, 10);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = '#38bdf8';
+    ctx.beginPath();
+    ctx.arc(0, 0, 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+}
+
+function drawObstacles() {
+    obstacles.forEach(obs => {
+        ctx.save();
+        ctx.shadowColor = obs.color;
+        ctx.shadowBlur = 10;
+        ctx.fillStyle = obs.color;
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+
+        ctx.fillRect(obs.x, 0, obs.width, obs.topHeight);
+        ctx.strokeRect(obs.x, 0, obs.width, obs.topHeight);
+
+        const bottomHeight = canvas.height - obs.bottomY;
+        ctx.fillRect(obs.x, obs.bottomY, obs.width, bottomHeight);
+        ctx.strokeRect(obs.x, obs.bottomY, obs.width, bottomHeight);
+
+        ctx.restore();
+    });
+}
+
+function drawParticles() {
+    particles.forEach(p => {
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x, p.y, p.size, p.size);
+    });
+}
+
+// Ranking
+function getLocalLeaderboard() {
+    return JSON.parse(localStorage.getItem('megahit_neonflap_ranks') || '[]');
+}
+
+function saveLocalLeaderboard(nick, score) {
+    let ranks = getLocalLeaderboard();
+    ranks.push({ nick, score });
+    ranks.sort((a, b) => b.score - a.score);
+    ranks = ranks.slice(0, 10);
+    localStorage.setItem('megahit_neonflap_ranks', JSON.stringify(ranks));
+    return ranks;
+}
+
+function renderListUI(ranks) {
+    if (!leaderboardList) return;
+    leaderboardList.innerHTML = '';
+    if (!ranks || ranks.length === 0) {
+        leaderboardList.innerHTML = '<li>Seja o primeiro a pontuar!</li>';
+        return;
+    }
+    ranks.forEach((item, index) => {
+        const li = document.createElement('li');
+        li.innerHTML = `<strong>#${index + 1} ${item.nick}</strong>: ${item.score} pts`;
+        leaderboardList.appendChild(li);
+    });
+}
+
+async function renderLeaderboard() {
+    if (leaderboardList) leaderboardList.innerHTML = '<li>Carregando ranking...</li>';
+
+    try {
+        const scoresRef = ref(db, 'rankings/neonflap');
+        const topScoresQuery = query(scoresRef, orderByChild('score'), limitToLast(10));
+        const snapshot = await get(topScoresQuery);
+
+        if (snapshot.exists()) {
+            const data = snapshot.val();
+            const list = Object.values(data).sort((a, b) => b.score - a.score);
+            renderListUI(list);
+        } else {
+            renderListUI([]);
+        }
+    } catch (err) {
+        console.warn("Firebase offline/bloqueado. Carregando ranking local:", err);
+        renderListUI(getLocalLeaderboard());
+    }
+}
+
+async function saveRankingScore() {
+    const nick = (playerNickInput && playerNickInput.value.trim()) || 'Piloto Neon';
+    if (saveScoreBtn) {
+        saveScoreBtn.disabled = true;
+        saveScoreBtn.textContent = 'SALVANDO...';
+    }
+
+    try {
+        const scoresRef = ref(db, 'rankings/neonflap');
+        const newScoreRef = push(scoresRef);
+
+        await set(newScoreRef, {
+            nick: nick,
+            score: score,
+            timestamp: Date.now()
+        });
+
+        saveLocalLeaderboard(nick, score);
+        const nickForm = document.getElementById('nick-form');
+        if (nickForm) nickForm.style.display = 'none';
+        renderLeaderboard();
+    } catch (err) {
+        console.warn("Erro ao salvar no Firebase. Salvando localmente:", err);
+        const localRanks = saveLocalLeaderboard(nick, score);
+        const nickForm = document.getElementById('nick-form');
+        if (nickForm) nickForm.style.display = 'none';
+        renderListUI(localRanks);
+    }
+}
